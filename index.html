@@ -1,0 +1,3118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>仙道争锋 — 修仙卡牌对战</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="仙道争锋">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a12">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#0a0a12;color:#e0d8c8;overflow:hidden;height:100vh;touch-action:manipulation}
+#app{width:100%;height:100vh;display:flex;flex-direction:column;position:relative}
+
+/* ===== 选角界面 ===== */
+#selectScreen{display:flex;flex-direction:column;align-items:center;padding:2vh 2vw;height:100vh;overflow-y:auto;background:linear-gradient(180deg,#0f0a1a 0,#1a0f0a 50%,#0a0f1a 100%)}
+#selectScreen h1{font-size:clamp(1.6rem,5vw,2.8rem);margin:1vh 0 0.5vh;color:#f0d8a0;text-shadow:0 0 20px rgba(200,150,50,0.3);letter-spacing:0.3em}
+#selectScreen .sub{color:#a09080;font-size:clamp(0.75rem,2vw,1rem);margin-bottom:2vh}
+.charGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;width:100%;max-width:800px}
+.charCard{background:linear-gradient(145deg,#1a1520,#12101a);border:1px solid #2a2040;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.charCard:hover,.charCard:active{transform:translateY(-3px);border-color:#f0d8a0;box-shadow:0 4px 20px rgba(200,150,50,0.2)}
+.charCard .icon{font-size:clamp(1.6rem,4vw,2.4rem);margin-bottom:4px}
+.charCard .name{font-size:clamp(0.85rem,2.2vw,1.1rem);color:#f0d8a0;font-weight:700}
+.charCard .title{font-size:clamp(0.65rem,1.6vw,0.85rem);color:#807060;margin-bottom:2px}
+.charCard .school{font-size:clamp(0.6rem,1.4vw,0.75rem);color:#605040;margin-bottom:4px}
+.charCard .desc{font-size:clamp(0.6rem,1.4vw,0.75rem);color:#a09080;line-height:1.3}
+.charCard .diff{font-size:clamp(0.55rem,1.3vw,0.7rem);margin-top:4px;color:#807060}
+.charCard .tag{display:inline-block;background:#2a2040;color:#f0d8a0;font-size:clamp(0.5rem,1.2vw,0.65rem);padding:1px 8px;border-radius:8px;margin-top:2px}
+.charCard.highlight{border-color:#ffd700;box-shadow:0 0 30px rgba(255,215,0,0.15)}
+
+/* ===== 游戏界面 ===== */
+#gameScreen{display:none;flex-direction:column;height:100vh;background:linear-gradient(180deg,#0a0a12 0,#12101a 50%,#0a0a12 100%)}
+
+/* 顶部对手信息 */
+#topBar{display:flex;align-items:center;padding:6px 10px;background:rgba(20,15,25,0.95);border-bottom:1px solid #1a1520;gap:8px;flex-shrink:0}
+#topBar .avatar{font-size:1.4rem;width:36px;text-align:center}
+#topBar .info{flex:1;min-width:0}
+#topBar .name{font-size:0.85rem;color:#f0d8a0;font-weight:700}
+#topBar .realm{font-size:0.65rem;color:#807060}
+.hpBarWrap{height:6px;background:#1a1520;border-radius:3px;margin:2px 0;overflow:hidden}
+.hpBarFill{height:100%;background:linear-gradient(90deg,#d04040,#f06060);border-radius:3px;transition:width .3s}
+.hpBarFill.heal{background:linear-gradient(90deg,#40a040,#60d060)}
+/* BIGHP: Global big HP bar */
+.bigHpBarWrap{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.bigHpLabel{font-size:0.6rem;color:#f0d8a0;font-weight:700}
+.bigHpBarOuter{flex:1;height:8px;background:#1a1520;border-radius:4px;overflow:hidden}
+.bigHpFill{height:100%;background:linear-gradient(90deg,#c08040,#f0d060);border-radius:4px;transition:width .4s}
+.bigHpText{font-size:0.65rem;color:#f0d8a0;min-width:40px;text-align:right}
+.armorBadge{display:inline-block;background:#305080;color:#a0c0f0;font-size:0.6rem;padding:0 5px;border-radius:4px;margin-left:4px}
+#topBar .handCount{color:#605040;font-size:0.7rem;white-space:nowrap}
+
+/* 中间战场 */
+#battlefield{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;overflow:hidden;position:relative;gap:6px}
+.statusZone{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:100%}
+.statusBadge{background:rgba(30,20,40,0.8);border:1px solid #2a2040;border-radius:8px;padding:4px 10px;font-size:clamp(0.6rem,1.5vw,0.75rem);color:#c0b0a0;display:flex;align-items:center;gap:4px}
+.statusBadge .val{color:#f0d8a0;font-weight:700}
+
+/* 魂链视觉 */
+#soulChainDisplay{display:flex;gap:4px;align-items:center;justify-content:center;min-height:28px}
+.chainLink{width:20px;height:20px;border-radius:50%;border:2px solid #6040a0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;transition:all .3s}
+.chainLink.active{background:#6040a0;box-shadow:0 0 12px rgba(100,60,160,0.5)}
+
+/* 墨迹显示 */
+#inkDisplay{display:flex;gap:6px;align-items:center;justify-content:center;min-height:28px}
+.inkDot{width:22px;height:22px;border-radius:50%;border:2px solid #404040;display:flex;align-items:center;justify-content:center;font-size:0.7rem;transition:all .3s}
+.inkDot.filled{box-shadow:0 0 8px rgba(200,150,50,0.3)}
+
+/* 中间消息 */
+#centerMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+#centerMsg span{background:rgba(0,0,0,0.85);padding:8px 20px;border-radius:8px;border:1px solid #2a2040;font-size:clamp(0.8rem,2vw,1.1rem);color:#f0d8a0;text-shadow:0 0 10px rgba(200,150,50,0.3);animation:fadeUpOut 1.5s forwards}
+@keyframes fadeUpOut{0%{opacity:0;transform:translateY(20px)}15%{opacity:1;transform:translateY(0)}70%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}
+
+/* 底部玩家信息 */
+#bottomBar{flex-shrink:0;background:rgba(20,15,25,0.95);border-top:1px solid #1a1520;padding:6px 10px}
+#playerInfo{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+#playerInfo .avatar{font-size:1.4rem;width:36px;text-align:center}
+#playerInfo .info{flex:1;min-width:0}
+#playerInfo .name{font-size:0.85rem;color:#f0d8a0;font-weight:700}
+#playerInfo .realm{font-size:0.65rem;color:#807060}
+#qiDisplay{display:flex;align-items:center;gap:4px;font-size:0.8rem;white-space:nowrap}
+#qiDisplay .qiIcon{color:#60a0f0}
+#qiDisplay .qiVal{color:#90c0ff;font-weight:700;font-size:1rem}
+#qiDisplay .qiMax{color:#405060;font-size:0.65rem}
+#cultivationBarWrap{height:4px;background:#1a1520;border-radius:2px;margin:2px 0;overflow:hidden;flex:1}
+#cultivationBarFill{height:100%;background:linear-gradient(90deg,#4060a0,#60a0f0);border-radius:2px;transition:width .3s}
+
+/* 修炼/突破按钮 */
+#actionRow{display:flex;gap:6px;margin-bottom:4px}
+.actionBtn{flex:1;padding:8px;border:none;border-radius:8px;font-size:clamp(0.65rem,1.6vw,0.85rem);cursor:pointer;font-weight:700;transition:all .15s;touch-action:manipulation;color:#fff}
+.actionBtn:active{transform:scale(0.96)}
+.btnCultivate{background:linear-gradient(135deg,#603020,#905040)}
+.btnCultivate:disabled{background:#1a1520;color:#504040;cursor:default}
+.btnBreakthrough{background:linear-gradient(135deg,#804020,#c06030)}
+.btnBreakthrough:disabled{background:#1a1520;color:#504040;cursor:default}
+.btnEndTurn{background:linear-gradient(135deg,#305030,#40a040)}
+.btnEndTurn:disabled{background:#1a1520;color:#504040;cursor:default}
+
+/* 手牌区域 */
+#handArea{display:flex;gap:5px;overflow-x:auto;overflow-y:hidden;padding:4px 2px;min-height:clamp(90px,20vw,130px);align-items:stretch;flex-shrink:0;scrollbar-width:none}
+#handArea::-webkit-scrollbar{display:none}
+
+/* 卡牌样式 */
+.card{flex:0 0 auto;width:clamp(65px,15vw,90px);background:linear-gradient(145deg,#1a1520,#12101a);border:1px solid #2a2040;border-radius:8px;padding:4px;display:flex;flex-direction:column;cursor:pointer;transition:all .15s;touch-action:manipulation;user-select:none;position:relative}
+.card:active{transform:translateY(-6px)}
+.card .cost{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:#2040a0;color:#a0c0ff;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid #4060c0}
+.card .cName{font-size:clamp(0.55rem,1.4vw,0.7rem);color:#f0d8a0;font-weight:600;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .cDesc{font-size:clamp(0.45rem,1.1vw,0.6rem);color:#908070;flex:1;line-height:1.2}
+.card .cType{font-size:0.5rem;padding:1px 4px;border-radius:3px;display:inline-block;width:fit-content;margin-top:1px}
+.type-damage{background:#502020;color:#ff8080}
+.type-defense{background:#203050;color:#80a0ff}
+.type-heal{background:#203020;color:#80c080}
+.type-special{background:#302040;color:#c080ff}
+.type-chain{background:#301040;color:#c080ff}
+.type-ink{background:#302020;color:#e0c080}
+
+.card.disabled{opacity:0.4;cursor:default}
+.card.disabled:active{transform:none}
+.card.selected{transform:translateY(-8px);border-color:#f0d8a0;box-shadow:0 4px 20px rgba(200,150,50,0.25)}
+
+/* 响应式 */
+@media(max-width:480px){
+  .charGrid{grid-template-columns:repeat(3,1fr);gap:6px;padding:0 2px}
+  .charCard{padding:8px 4px}
+  .charCard .desc{display:none}
+  #handArea{gap:3px}
+  .card{width:clamp(52px,17vw,70px);padding:3px}
+  .card .cDesc{font-size:0.4rem}
+  #topBar{padding:4px 6px}
+  #bottomBar{padding:4px 6px}
+  .actionBtn{padding:6px;font-size:0.65rem}
+}
+
+@media(min-width:768px){
+  .charGrid{grid-template-columns:repeat(5,1fr)}
+  .card{width:clamp(80px,10vw,110px);padding:6px}
+}
+
+/* 日志区域 */
+#logArea{position:absolute;bottom:0;left:0;right:0;max-height:80px;overflow-y:auto;background:rgba(0,0,0,0.8);padding:4px 10px;font-size:0.6rem;color:#605040;pointer-events:none;z-index:5}
+#logArea div{margin:1px 0}
+
+/* 弹窗 */
+.modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100}
+.modalBox{background:linear-gradient(145deg,#1a1520,#12101a);border:1px solid #2a2040;border-radius:16px;padding:24px 20px;max-width:340px;width:90%;text-align:center}
+.modalBox h2{color:#f0d8a0;margin-bottom:8px}
+.modalBox p{color:#a09080;font-size:0.85rem;margin-bottom:12px;line-height:1.4}
+.modalBtn{background:linear-gradient(135deg,#604020,#c08040);border:none;color:#fff;padding:10px 24px;border-radius:8px;font-size:1rem;cursor:pointer;font-weight:700;transition:all .15s}
+.modalBtn:active{transform:scale(0.96)}
+.modalBtn.secondary{background:linear-gradient(135deg,#303040,#505060)}
+
+/* ===== UI 特效 ===== */
+/* 出牌飞行 */
+@keyframes cardFlyOut{0%{transform:scale(1) translateY(0);opacity:1}50%{transform:scale(1.3) translateY(-60px);opacity:1}100%{transform:scale(2) translateY(-200px);opacity:0}}
+.card-fly{animation:cardFlyOut .5s forwards;pointer-events:none!important}
+
+/* 伤害飘字 */
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-60px) scale(1.3)}}
+.float-dmg{position:absolute;font-size:1.6rem;font-weight:900;pointer-events:none;z-index:50;text-shadow:0 0 10px rgba(255,0,0,0.5);animation:floatUp .8s forwards}
+.float-heal{color:#60d060;text-shadow:0 0 10px rgba(0,255,0,0.3)}
+.float-dmg-dmg{color:#ff4040;text-shadow:0 0 10px rgba(255,0,0,0.3)}
+
+/* 屏幕震动 */
+@keyframes shake{0%,100%{transform:translateX(0)}10%{transform:translateX(-4px)}30%{transform:translateX(4px)}50%{transform:translateX(-3px)}70%{transform:translateX(3px)}90%{transform:translateX(-1px)}}
+.shake{animation:shake .3s}
+
+/* 突破特效（柔化） */
+@keyframes tribulationFlash{0%{box-shadow:inset 0 0 0 rgba(200,150,50,0)}50%{box-shadow:inset 0 0 60px rgba(200,150,50,0.2)}100%{box-shadow:inset 0 0 0 rgba(200,150,50,0)}}
+.tribulation{animation:tribulationFlash .6s}
+
+/* 升级光效 */
+@keyframes realmUp{0%{filter:brightness(1)}30%{filter:brightness(2) sepia(0.5)}100%{filter:brightness(1)}}
+.realmUp{animation:realmUp .8s}
+
+/* 魂链脉冲 */
+@keyframes chainPulse{0%,100%{box-shadow:0 0 8px rgba(100,60,160,0.3)}50%{box-shadow:0 0 20px rgba(100,60,160,0.8)}}
+.chainLink.active{background:#6040a0;box-shadow:0 0 12px rgba(100,60,160,0.5)}
+.chainLink.pulse{animation:chainPulse .6s}
+
+/* 回合切换 */
+@keyframes turnSlide{0%{opacity:0;transform:translateY(-40px) scale(0.5)}15%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(40px) scale(0.5)}}
+.turnPopup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;font-weight:900;color:#f0d8a0;text-shadow:0 0 30px rgba(200,150,50,0.5);z-index:100;pointer-events:none;animation:turnSlide 1.5s forwards}
+
+/* ===== 联机大厅 ===== */
+#lobbyScreen{display:none;flex-direction:column;align-items:center;padding:2vh 2vw;height:100vh;overflow-y:auto;background:linear-gradient(180deg,#0f0a1a 0,#1a0f0a 50%,#0a0f1a 100%)}
+#lobbyScreen h2{font-size:clamp(1.2rem,4vw,1.8rem);color:#f0d8a0;margin:1vh 0}
+.roomCode{font-size:clamp(1.6rem,5vw,2.4rem);color:#f0d8a0;font-weight:900;letter-spacing:0.3em;text-shadow:0 0 20px rgba(200,150,50,0.3);margin:1vh 0;padding:10px 24px;border:2px dashed #2a2040;border-radius:12px;display:inline-block}
+.lobbyPlayers{width:100%;max-width:500px;display:flex;flex-direction:column;gap:8px;margin:1vh 0}
+.lobbyPlayer{background:rgba(30,20,40,0.8);border:1px solid #2a2040;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.lobbyPlayer .icon{font-size:1.4rem;width:32px;text-align:center}
+.lobbyPlayer .name{flex:1;font-weight:600;color:#e0d8c8}
+.lobbyPlayer .status{font-size:0.7rem;padding:2px 8px;border-radius:4px}
+.lobbyPlayer .status.ready{background:#203020;color:#60c060}
+.lobbyPlayer .status.waiting{background:#302020;color:#c06060}
+.lobbyPlayer .status.ai{background:#202040;color:#8080e0}
+.lobbyPlayer .removeBtn{background:#402020;color:#ff6060;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.65rem}
+.lobbyActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:500px}
+.lobbyBtn{flex:1;min-width:100px;padding:10px 16px;border:none;border-radius:8px;font-size:clamp(0.75rem,1.8vw,0.95rem);font-weight:700;cursor:pointer;transition:all .15s;color:#fff;text-align:center}
+.lobbyBtn:active{transform:scale(0.96)}
+.lobbyBtn.start{background:linear-gradient(135deg,#406020,#60a030)}
+.lobbyBtn.readyBtn{background:linear-gradient(135deg,#304060,#4060a0)}
+.lobbyBtn.addAI{background:linear-gradient(135deg,#404030,#706040)}
+.lobbyBtn.leave{background:linear-gradient(135deg,#502020,#803030)}
+
+/* 联机对战模式标签 */
+#modeSelect{display:flex;gap:12px;justify-content:center;margin:2vh 0;width:100%;max-width:400px}
+.modeBtn{flex:1;padding:16px;border:2px solid #2a2040;border-radius:12px;cursor:pointer;text-align:center;transition:all .2s;background:rgba(30,20,40,0.5)}
+.modeBtn:hover{border-color:#f0d8a0;transform:translateY(-2px)}
+.modeBtn .icon{font-size:2rem;margin-bottom:4px}
+.modeBtn .label{color:#f0d8a0;font-weight:700;font-size:1rem}
+.modeBtn .desc{color:#807060;font-size:0.7rem;margin-top:2px}
+.modeBtn.active{border-color:#f0d8a0;background:rgba(200,150,50,0.1)}
+
+/* 加入房间输入 */
+#joinArea{display:none;width:100%;max-width:360px;gap:8px;margin:1vh 0}
+#joinArea input{background:#1a1520;border:1px solid #2a2040;border-radius:8px;padding:10px 14px;color:#f0d8a0;font-size:1.2rem;text-align:center;letter-spacing:0.3em;width:100%;outline:none;text-transform:uppercase}
+#joinArea input:focus{border-color:#f0d8a0}
+#joinArea .row{display:flex;gap:8px;margin-top:6px}
+#joinArea .row button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:700;cursor:pointer;color:#fff;transition:all .15s}
+#joinArea .row button:active{transform:scale(0.96)}
+.schoolSelect{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0}
+.schoolOption{padding:3px 10px;border-radius:6px;cursor:pointer;font-size:0.7rem;border:1px solid #2a2040;transition:all .15s;background:transparent;color:#807060}
+.schoolOption:hover{border-color:#605040}
+.schoolOption.chosen{border-color:#f0d8a0;color:#f0d8a0;background:rgba(200,150,50,0.1)}
+
+/* 卡牌hover效果增强 */
+.card:not(.disabled):hover{transform:translateY(-10px);border-color:#f0d8a0;box-shadow:0 8px 30px rgba(200,150,50,0.3);z-index:2}
+.card:not(.disabled):hover .cName{color:#fff}
+.card:not(.disabled):hover .cDesc{color:#b0a090}
+
+/* 境界光晕 */
+.realmGlow{text-shadow:0 0 10px rgba(200,150,50,0.4)}
+.realmGlow.r0{color:#a0a0a0}
+.realmGlow.r1{color:#80c080}
+.realmGlow.r2{color:#f0d060}
+.realmGlow.r3{color:#c080ff}
+.realmGlow.r4{color:#ff6040}
+
+/* 魂链渲染增强 */
+#soulChainDisplay{min-height:32px}
+.chainLink{width:24px;height:24px;border-radius:50%;border:2px solid #402060;display:flex;align-items:center;justify-content:center;font-size:0.65rem;transition:all .4s;background:transparent}
+.chainLink.active{background:radial-gradient(circle,#6040a0,#402060);border-color:#8060c0}
+.chainLink.active.pulse{animation:chainPulse .6s}
+
+/* 战斗日志增强 */
+#logArea div{margin:1px 0;border-left:2px solid transparent;padding-left:4px}
+#logArea div.log-damage{border-left-color:#ff4040;color:#ff6060}
+#logArea div.log-heal{border-left-color:#40c040;color:#60c060}
+#logArea div.log-chain{border-left-color:#8060c0;color:#a080e0}
+#logArea div.log-system{border-left-color:#6080c0;color:#80a0e0}
+#logArea div.log-breakthrough{border-left-color:#ff8040;color:#ffa060}
+
+/* ===== VFX: 粒子画布 ===== */
+#particleCanvas{position:fixed;inset:0;pointer-events:none;z-index:1}
+
+/* ===== VFX: 卡牌光晕 (可打出时脉动) ===== */
+@keyframes cardGlow{0%,100%{box-shadow:0 0 5px rgba(200,150,50,0.15),0 0 10px rgba(200,150,50,0.05)}50%{box-shadow:0 0 15px rgba(200,150,50,0.4),0 0 30px rgba(200,150,50,0.15)}}
+.card.playable:not(.disabled):not(.selected){animation:cardGlow 2s ease-in-out infinite}
+
+/* ===== VFX: 境界品质边框 ===== */
+.card.realm-0{border-color:#808080}
+.card.realm-1{border-color:#40a040;box-shadow:0 0 8px rgba(64,160,64,0.3)}
+.card.realm-2{border-color:#d0a040;box-shadow:0 0 12px rgba(208,160,64,0.4)}
+.card.realm-3{border-color:#a060e0;box-shadow:0 0 12px rgba(160,96,224,0.4)}
+.card.realm-4{border-color:#e04040;box-shadow:0 0 16px rgba(224,64,64,0.5)}
+.card.realm-0.selected,.card.realm-1.selected,.card.realm-2.selected,.card.realm-3.selected,.card.realm-4.selected{transform:translateY(-8px);box-shadow:0 4px 20px rgba(200,150,50,0.25)!important}
+
+/* ===== VFX: 全屏闪光（柔化版） ===== */
+.screen-flash{position:fixed;inset:0;z-index:998;pointer-events:none;background:rgba(255,255,255,0);animation:screenFlash 0.5s forwards}
+@keyframes screenFlash{0%{background:rgba(255,200,100,0)}15%{background:rgba(255,200,100,0.12)}100%{background:rgba(255,200,100,0)}}
+
+/* ===== VFX: 灵气环绕 ===== */
+@keyframes qiFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.15)}}
+.qiIcon{animation:qiFloat 2s ease-in-out infinite;display:inline-block}
+
+/* ===== VFX: 护盾波动 ===== */
+@keyframes shieldWave{0%{box-shadow:0 0 0 0 rgba(80,120,200,0.5)}100%{box-shadow:0 0 0 12px rgba(80,120,200,0)}}
+.armorBadge.shield-wave{animation:shieldWave 0.6s ease-out}
+
+/* ===== VFX: 墨迹增强 ===== */
+.inkDot{border-color:#403020;transition:all 0.3s}
+.inkDot.filled{background:radial-gradient(circle,#e0c080,#806040);border-color:#e0c080;box-shadow:0 0 10px rgba(200,150,50,0.5);animation:inkPulse 1.5s ease-in-out infinite}
+@keyframes inkPulse{0%,100%{box-shadow:0 0 8px rgba(200,150,50,0.4)}50%{box-shadow:0 0 16px rgba(200,150,50,0.7)}}
+
+/* ===== VFX: 魂链增强 ===== */
+.chainLink{transition:all 0.4s}
+.chainLink.active{background:radial-gradient(circle,#6040a0,#402060);border-color:#8060c0;box-shadow:0 0 12px rgba(100,60,160,0.5)}
+.chainLink.active.pulse{animation:chainPulse 0.6s}
+
+/* ===== VFX: 突破环形光 ===== */
+@keyframes breakthroughRing{0%{transform:scale(0) translate(-50%,-50%);opacity:1;transform-origin:center}100%{transform:scale(3) translate(-50%,-50%);opacity:0}}
+.bt-ring{position:absolute;width:60px;height:60px;border-radius:50%;border:3px solid #ffd700;pointer-events:none;z-index:20;animation:breakthroughRing 0.8s forwards;left:50%;top:50%}
+
+/* ===== TOURNAMENT: 群仙乱斗 ===== */
+.tournamentGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:700px;margin:1vh auto}
+.tournamentSlot{background:linear-gradient(145deg,#1a1520,#12101a);border:1px solid #2a2040;border-radius:12px;padding:12px 8px;text-align:center;transition:all .2s}
+.tournamentSlot.human{border-color:#f0d8a0;box-shadow:0 0 20px rgba(200,150,50,0.15)}
+.tournamentSlot.dead{opacity:0.4;border-color:#402020}
+.tournamentSlot .tSlotIcon{font-size:1.6rem;margin-bottom:2px}
+.tournamentSlot .tSlotName{font-size:clamp(0.75rem,1.8vw,0.9rem);color:#f0d8a0;font-weight:600}
+.tournamentSlot .tSlotSchool{font-size:clamp(0.6rem,1.4vw,0.7rem);color:#807060;margin-bottom:4px}
+.tournamentSlot .tSlotHpBarWrap{height:8px;background:#1a1520;border-radius:4px;margin:4px 8px;overflow:hidden}
+.tournamentSlot .tSlotHpFill{height:100%;background:linear-gradient(90deg,#d04040,#f06060);border-radius:4px;transition:width .3s}
+.tournamentSlot .tSlotHpText{font-size:clamp(0.6rem,1.4vw,0.75rem);color:#a09080}
+.tournamentSlot .tSlotDead{font-size:0.7rem;color:#ff6060;margin-top:2px}
+.tPairing{width:100%;max-width:600px;margin:1vh auto}
+.tPairRow{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:rgba(30,20,40,0.8);border:1px solid #2a2040;border-radius:10px;margin:6px 0;font-size:clamp(0.7rem,1.6vw,0.85rem)}
+.tPairRow.active{border-color:#f0d8a0;box-shadow:0 0 15px rgba(200,150,50,0.15)}
+.tPairRow.bye{border-color:#204020}
+.tPairIcon{font-size:1.2rem}
+.tPairName{color:#f0d8a0;font-weight:600}
+.tPairVS{color:#605040;font-size:0.8rem;margin:0 4px}
+.tPairStatus{color:#f0d8a0;font-size:0.7rem;margin-left:8px;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.tResultCard{background:rgba(30,20,40,0.8);border:1px solid #2a2040;border-radius:12px;padding:16px;max-width:600px;width:100%;margin:1vh auto;text-align:center}
+.tResultPair{display:flex;align-items:center;justify-content:center;gap:8px;font-size:clamp(0.8rem,1.8vw,1rem);margin-bottom:8px}
+.tRIcon{font-size:1.4rem}
+.tRName{font-weight:700;color:#f0d8a0}
+.tRName.winner{color:#60c060}
+.tRName.loser{color:#ff6060}
+.tRVS{color:#605040;font-size:0.75rem;margin:0 4px}
+.tResultDetail{font-size:clamp(0.65rem,1.5vw,0.8rem);color:#a09080;line-height:1.6}
+.tEliminated{color:#ff4040;font-weight:700;margin-top:4px;font-size:clamp(0.7rem,1.6vw,0.85rem)}
+.tStandings{width:100%;max-width:600px;margin:1vh auto}
+.tStandTitle{color:#f0d8a0;font-weight:700;font-size:clamp(0.8rem,1.8vw,1rem);margin-bottom:6px;text-align:center}
+.tStandRow{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(30,20,40,0.6);border:1px solid #1a1520;border-radius:8px;margin:4px 0}
+.tStandRow.human{border-color:#f0d8a0}
+.tStandRow.dead{opacity:0.4}
+.tStandRank{width:28px;text-align:center;color:#a09080;font-size:0.75rem}
+.tStandIcon{font-size:1.2rem;width:24px;text-align:center}
+.tStandName{flex:1;color:#f0d8a0;font-weight:600;font-size:clamp(0.65rem,1.5vw,0.8rem)}
+.tStandHpBarWrap{flex:1;height:6px;background:#1a1520;border-radius:3px;overflow:hidden;max-width:120px}
+.tStandHpFill{height:100%;background:linear-gradient(90deg,#d04040,#f06060);border-radius:3px;transition:width .3s}
+.tStandHp{font-size:clamp(0.55rem,1.3vw,0.7rem);color:#a09080;min-width:50px;text-align:right}
+.tStandDead{font-size:0.8rem}
+.tChampionBanner{text-align:center;padding:20px;max-width:600px;width:100%;margin:1vh auto}
+.tChampCrown{font-size:3rem;animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.tChampIcon{font-size:4rem;margin:8px 0}
+.tChampName{font-size:clamp(1.2rem,3vw,1.8rem);color:#ffd700;font-weight:900;text-shadow:0 0 30px rgba(255,215,0,0.4)}
+.tChampSchool{font-size:clamp(0.8rem,1.8vw,1rem);color:#a09080;margin-bottom:12px}
+.tChampDesc{font-size:clamp(0.7rem,1.6vw,0.85rem);color:#c0b0a0;margin-bottom:6px}
+.tChampStats{font-size:clamp(0.6rem,1.4vw,0.75rem);color:#807060}
+#tournamentSchoolSelect{margin-bottom:1vh}
+@media(max-width:480px){
+  .tournamentGrid{grid-template-columns:repeat(2,1fr);gap:6px}
+}
+</style>
+</head>
+<body>
+<canvas id="particleCanvas"></canvas>
+<div id="app">
+  <!-- ===== 选角/模式界面 ===== -->
+  <div id="selectScreen">
+    <h1>🏔️ 仙道争锋</h1>
+    <div class="sub">选你的修仙之路</div>
+    <!-- 模式选择 -->
+    <div id="modeSelect">
+      <div class="modeBtn active" data-mode="local">
+        <div class="icon">🎮</div>
+        <div class="label">本地游戏</div>
+        <div class="desc">vs AI，离线畅玩</div>
+      </div>
+      <div class="modeBtn" data-mode="online">
+        <div class="icon">🌐</div>
+        <div class="label">联机对战</div>
+        <div class="desc">创建/加入房间</div>
+      </div>
+      <!-- TOURNAMENT: 群仙乱斗模式 -->
+      <div class="modeBtn" data-mode="roguelike" id="btnModeRoguelike">
+        <div class="icon">🏔️</div>
+        <div class="label">修仙爬塔</div>
+        <div class="desc">肉鸽牌组构建</div>
+      </div>
+      <div class="modeBtn" data-mode="tournament">
+        <div class="icon">⚔️</div>
+        <div class="label">群仙乱斗</div>
+        <div class="desc">6人淘汰赛，大血条生存战</div>
+      </div>
+    </div>
+    <!-- 联机加入区域 -->
+    <div id="joinArea">
+      <input id="roomCodeInput" placeholder="输入房间码" maxlength="4">
+      <div class="row">
+        <button class="lobbyBtn readyBtn" id="btnJoinRoom">🔗 加入房间</button>
+        <button class="lobbyBtn start" id="btnCreateRoom">🆕 创建房间</button>
+      </div>
+      <div id="joinError" style="color:#ff6040;font-size:0.75rem;margin-top:4px"></div>
+    </div>
+    <div id="aiPersonalityPicker" style="width:100%;max-width:500px;text-align:center;margin:1vh 0"><div style="color:#a09080;font-size:0.75rem;margin-bottom:4px">🤖 对手AI人格</div><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap" id="aiPersonalityBtns"><button class="schoolOption chosen" data-ai="auto" style="font-size:0.65rem;padding:3px 10px">🎲 随机</button><button class="schoolOption" data-ai="jianchi" style="font-size:0.65rem;padding:3px 10px">🗡️ 剑痴</button><button class="schoolOption" data-ai="yaozun" style="font-size:0.65rem;padding:3px 10px">🌿 药尊</button><button class="schoolOption" data-ai="tianji" style="font-size:0.65rem;padding:3px 10px">🔮 天机</button><button class="schoolOption" data-ai="mingwang" style="font-size:0.65rem;padding:3px 10px">🏛️ 明王</button><button class="schoolOption" data-ai="hunzun" style="font-size:0.65rem;padding:3px 10px">🏆 魂尊</button></div></div>
+<div id="aiApiKeyRow" style="width:100%;max-width:500px;display:flex;gap:6px;justify-content:center;align-items:center;margin:0.5vh 0"><span style="color:#605040;font-size:0.65rem">🔑</span><input id="aiApiKeyInput" type="password" placeholder="DeepSeek API Key（留空则用预设语录）" style="flex:1;background:#1a1520;border:1px solid #2a2040;border-radius:6px;padding:4px 8px;color:#e0d8c8;font-size:0.6rem;outline:none;max-width:300px"><button id="btnSaveApiKey" style="background:linear-gradient(135deg,#304060,#4060a0);border:none;border-radius:4px;color:#fff;padding:3px 8px;font-size:0.6rem;cursor:pointer">保存</button><span id="apiKeyStatus" style="font-size:0.55rem;color:#605040"></span></div>
+    <div class="charGrid" id="charGrid"></div>
+  </div>
+
+  <!-- ===== 联机大厅 ===== -->
+  <div id="lobbyScreen">
+    <h2>🏔️ 仙道争锋</h2>
+    <div style="font-size:0.8rem;color:#807060">房间码</div>
+    <div class="roomCode" id="roomCodeDisplay">----</div>
+    <div style="font-size:0.7rem;color:#605040;margin-bottom:1vh">分享房间码给朋友</div>
+    <div class="lobbyPlayers" id="lobbyPlayers"></div>
+    <div class="lobbyActions" id="lobbyActions">
+      <button class="lobbyBtn readyBtn" id="btnReadyToggle">✅ 准备</button>
+      <button class="lobbyBtn addAI" id="btnAddAI">🤖 添加AI</button>
+      <button class="lobbyBtn start" id="btnStartGame" style="display:none">⚔️ 开始对战</button>
+      <button class="lobbyBtn leave" id="btnLeaveRoom">🚪 退出房间</button>
+    </div>
+  </div>
+
+  <!-- ===== TOURNAMENT: 群仙乱斗大厅 ===== -->
+  <div id="tournamentLobby" style="display:none;flex-direction:column;align-items:center;padding:2vh 2vw;height:100vh;overflow-y:auto;background:linear-gradient(180deg,#0f0a1a 0,#1a0f0a 50%,#0a0f1a 100%)">
+    <h2 style="font-size:clamp(1.2rem,4vw,1.8rem);color:#f0d8a0;margin:1vh 0">⚔️ 群仙乱斗</h2>
+    <div style="color:#a09080;font-size:clamp(0.75rem,2vw,1rem);margin-bottom:1vh">6人淘汰赛，大血条生存战</div>
+    <div id="tournamentPlayerSlots" style="width:100%;max-width:700px"></div>
+    <div class="lobbyActions">
+      <button class="lobbyBtn start" id="btnTournamentStart" style="display:none">⚔️ 开始比赛</button>
+      <button class="lobbyBtn leave" id="btnTournamentBack">🔙 返回</button>
+    </div>
+  </div>
+
+  <!-- ===== TOURNAMENT: 群仙乱斗结算 ===== -->
+  <div id="tournamentResult" style="display:none;flex-direction:column;align-items:center;padding:2vh 2vw;height:100vh;overflow-y:auto;background:linear-gradient(180deg,#0f0a1a 0,#1a0f0a 50%,#0a0f1a 100%)">
+    <h2 id="tournamentResultTitle" style="font-size:clamp(1.2rem,4vw,1.8rem);color:#f0d8a0;margin:1vh 0">⚔️ 群仙乱斗</h2>
+    <div id="tournamentMatchResult"></div>
+    <div id="tournamentStandings"></div>
+    <div class="lobbyActions">
+      <button class="lobbyBtn start" id="btnTournamentNextRound" style="display:none">➡️ 下一轮</button>
+      <button class="lobbyBtn leave" id="btnTournamentFinish" style="display:none">🏠 返回选角</button>
+    </div>
+  </div>
+
+  <!-- ===== 游戏界面 ===== -->
+  <div id="gameScreen">
+    <div id="topBar">
+      <div class="avatar" id="oppAvatar">🗡️</div>
+      <div class="info">
+        <div><span class="name" id="oppName">对手</span><span class="realm" id="oppRealm">练气期</span></div>
+        <!-- BIGHP: opponent big HP bar -->
+        <div class="bigHpBarWrap" id="oppBigHpWrap">
+          <div class="bigHpLabel">道基</div>
+          <div class="bigHpBarOuter"><div class="bigHpFill" id="oppBigHpFill" style="width:100%"></div></div>
+          <span class="bigHpText" id="oppBigHpText">90/90</span>
+        </div>
+        <div class="hpBarWrap"><div class="hpBarFill" id="oppHpBar" style="width:100%"></div></div>
+        <div style="display:flex;gap:6px;font-size:0.6rem;color:#807060">
+          <span id="oppHpText">30/30</span>
+          <span class="armorBadge" id="oppArmorBadge" style="display:none">🛡️ 0</span>
+        </div>
+      </div>
+      <div class="handCount" id="oppHandCount">🃏×5</div>
+    </div>
+
+    <div id="battlefield">
+      <div class="statusZone" id="statusZone"></div>
+      <div id="soulChainDisplay"></div>
+      <div id="inkDisplay"></div>
+      <div id="centerMsg"></div>
+      <div id="logArea"></div>
+    </div>
+
+    <div id="bottomBar">
+      <div id="playerInfo">
+        <div class="avatar" id="playerAvatar">🗡️</div>
+        <div class="info">
+          <div><span class="name" id="playerName">你</span><span class="realm" id="playerRealm">练气期</span></div>
+          <!-- BIGHP: player big HP bar -->
+          <div class="bigHpBarWrap" id="playerBigHpWrap">
+            <div class="bigHpLabel">道基</div>
+            <div class="bigHpBarOuter"><div class="bigHpFill" id="playerBigHpFill" style="width:100%"></div></div>
+            <span class="bigHpText" id="playerBigHpText">90/90</span>
+          </div>
+          <div class="hpBarWrap"><div class="hpBarFill" id="playerHpBar" style="width:100%"></div></div>
+          <div style="display:flex;gap:6px;font-size:0.6rem;color:#807060">
+            <span id="playerHpText">30/30</span>
+            <span class="armorBadge" id="playerArmorBadge" style="display:none">🛡️ 0</span>
+          </div>
+        </div>
+        <div id="qiDisplay">
+          <span class="qiIcon">💠</span>
+          <span class="qiVal" id="qiVal">2</span>
+          <span class="qiMax">/<span id="qiMax">10</span></span>
+        </div>
+      </div>
+      <div id="cultivationBarWrap"><div id="cultivationBarFill" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.55rem;color:#504540;margin:1px 0">
+        <span>修为: <span id="cultProgress">0/3</span></span>
+        <span>牌库: <span id="deckCount">12</span> | 弃牌: <span id="discardCount">0</span></span>
+      </div>
+      <div id="actionRow">
+        <button class="actionBtn btnCultivate" id="btnCultivate">📤 弃牌修炼 (得修为+2护甲)</button>
+        <button class="actionBtn btnBreakthrough" id="btnBreakthrough" disabled>🌩️ 突破</button>
+        <button class="actionBtn btnEndTurn" id="btnEndTurn">⏭️ 结束回合</button>
+      </div>
+      <div id="handArea"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI聊天面板 -->
+<div id="chatPanel" style="position:fixed;right:0;top:0;bottom:0;width:clamp(220px,25vw,320px);background:rgba(10,5,15,0.95);border-left:1px solid #2a2040;display:none;flex-direction:column;z-index:50"><div style="padding:8px 10px;background:rgba(20,15,25,0.95);border-bottom:1px solid #2a2040;display:flex;align-items:center;justify-content:space-between"><span id="chatTitle" style="color:#f0d8a0;font-size:0.8rem;font-weight:700">💬 论道</span><div style="display:flex;gap:4px"><button id="btnVoiceToggle" style="background:transparent;border:none;cursor:pointer;font-size:0.9rem;color:#605040">🔊</button><button id="btnChatToggle" style="background:transparent;border:none;cursor:pointer;font-size:0.9rem;color:#a09080">✕</button></div></div><div id="chatMessages" style="flex:1;overflow-y:auto;padding:8px;font-size:0.7rem"></div><div style="display:flex;padding:6px;border-top:1px solid #1a1520;gap:4px"><input id="chatInput" placeholder="说点什么..." style="flex:1;background:#1a1520;border:1px solid #2a2040;border-radius:6px;padding:6px 8px;color:#e0d8c8;font-size:0.7rem;outline:none" maxlength="100"><button id="btnChatSend" style="background:linear-gradient(135deg,#304060,#4060a0);border:none;border-radius:6px;color:#fff;padding:4px 10px;font-size:0.7rem;cursor:pointer;white-space:nowrap">发送</button><button id="btnVoiceInput" style="background:linear-gradient(135deg,#604020,#c08040);border:none;border-radius:6px;color:#fff;padding:4px 8px;font-size:0.7rem;cursor:pointer;white-space:nowrap">🎤</button></div></div><button id="btnOpenChat" style="position:fixed;right:0;top:50%;transform:translateY(-50%);background:rgba(20,15,25,0.9);border:1px solid #2a2040;border-right:none;border-radius:8px 0 0 8px;color:#a09080;padding:8px 6px;cursor:pointer;font-size:0.9rem;z-index:49;writing-mode:vertical-rl;display:none">💬 论道</button>
+
+<script src="/roguelike_mode.js"></script>
+<script>
+// ============================================================
+//  错误捕获（方便调试）
+// ============================================================
+window.onerror = function(msg, url, line) {
+  var errDiv = document.createElement('div');
+  errDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#400;color:#f88;padding:8px;font-size:12px;z-index:9999';
+  errDiv.textContent = '⚠️ JS错误: ' + msg + ' (行' + line + ')';
+  document.body.appendChild(errDiv);
+  return true;
+};
+
+// ============================================================
+//  数据定义
+// ============================================================
+
+const REALMS = [
+  { name:'练气期', maxHp:30, qiPerTurn:2, breakthroughNeed:3, passive:'' },
+  { name:'筑基期', maxHp:42, qiPerTurn:3, breakthroughNeed:7, passive:'每回合回复2HP' },
+  { name:'金丹期', maxHp:55, qiPerTurn:4, breakthroughNeed:12, passive:'每打出第3张牌额外造成2点伤害' },
+  { name:'元婴期', maxHp:70, qiPerTurn:5, breakthroughNeed:18, passive:'护甲每回合保留3点' },
+  { name:'化神期', maxHp:85, qiPerTurn:6, breakthroughNeed:99, passive:'额外抽1张牌/回合' },
+];
+
+function tribulationDamage(realmIndex){
+  // realmIndex 是突破前的境界(0-3)，返回对应的天劫伤害
+  // 练气(0)→筑基:14  筑基(1)→金丹:18  金丹(2)→元婴:22  元婴(3)→化神:26 // BALANCE: 天劫+1，提升突破风险
+  return (realmIndex + 2) * 4 + 6;
+}
+
+// ============================================================
+//  5个流派 · 卡牌数据
+// ============================================================
+
+const SCHOOLS = {
+  tianjian:{
+    icon:'🗡️', name:'天剑宗', title:'凌云剑尊',
+    desc:'暴力连击，剑意叠加后一剑定乾坤',
+    diff:'中等', diffStars:'★★☆', tag:'⚔️连击爆发',
+    passive:'每连续打出第3张伤害牌，造成2点额外伤害',
+    cards:[
+      // 练气
+      {id:'qingfeng',name:'青锋斩',cost:1,type:'damage',realm:0,desc:'造成4点伤害',eff:(g,t,self)=>{dmg(g,t,4,self)}},
+      {id:'lianzhan',name:'连斩',cost:2,type:'damage',realm:0,desc:'造成4+4点伤害',eff:(g,t,self)=>{dmg(g,t,4,self);dmg(g,t,4,self)}}, // BALANCE: 3+3→4+4 提升连击效率,
+      {id:'jianqijue',name:'剑气诀',cost:1,type:'damage',realm:0,desc:'造成3伤，+1剑意',eff:(g,t,self)=>{dmg(g,t,3,self);g.p.swordIntent = Math.min(6,(g.p.swordIntent||0)+1)}},
+      {id:'xujiianshi',name:'蓄剑式',cost:0,type:'special',realm:0,desc:'+2剑意',eff:(g,t,self)=>{g.p.swordIntent = Math.min(6,(g.p.swordIntent||0)+2)}},
+      // 筑基
+      {id:'pojunjian',name:'破军剑',cost:2,type:'damage',realm:1,desc:'造成7伤(剑意≥3时+3)',eff:(g,t,self)=>{let d=7;if((g.p.swordIntent||0)>=3)d+=3;dmg(g,t,d,self)}},
+      {id:'jianwu',name:'剑舞',cost:2,type:'damage',realm:1,desc:'造成3伤+抽1牌+1剑意',eff:(g,t,self)=>{dmg(g,t,3,self);drawCards(g,self,1);g.p.swordIntent=Math.min(6,(g.p.swordIntent||0)+1)}},
+	      {id:'jianqihuti',name:'剑气护体',cost:1,type:'defense',realm:1,desc:'+4甲 +1剑意',eff:(g,t,self)=>{addArmor(g,self,4);self.swordIntent=Math.min(6,(self.swordIntent||0)+1)}},
+      {id:'zhuifeng',name:'追风剑',cost:1,type:'damage',realm:1,desc:'2段×3伤',eff:(g,t,self)=>{dmg(g,t,3,self);dmg(g,t,3,self)}},
+      // 金丹
+      {id:'wanjianjue',name:'万剑诀',cost:3,type:'damage',realm:2,desc:'剑意×4伤→消耗剑意',eff:(g,t,self)=>{let n=(g.p.swordIntent||0)*4;g.p.swordIntent=0;dmg(g,t,n,self)}},
+      {id:'jianxin',name:'剑心通明',cost:2,type:'special',realm:2,desc:'剑意上限+2，抽1张牌',eff:(g,t,self)=>{g.p.maxSwordIntent=(g.p.maxSwordIntent||6)+2;drawCards(g,self,1)}},
+	      {id:'wanjianguizong',name:'万剑归宗',cost:4,type:'damage',realm:2,desc:'3段×4伤',eff:(g,t,self)=>{dmg(g,t,4,self);dmg(g,t,4,self);dmg(g,t,4,self)}}
+,
+      {id:'jianzhen',name:'剑阵',cost:2,type:'special',realm:2,desc:'本回合每张伤害牌额外+1伤',eff:(g,t,self)=>{self.jianzhenBuff=(self.jianzhenBuff||0)+1;}},
+      // 元婴
+      {id:'yijianpo',name:'一剑破万法',cost:4,type:'damage',realm:3,desc:'10+剑意×3伤→消耗剑意',eff:(g,t,self)=>{let n=10+(g.p.swordIntent||0)*3;g.p.swordIntent=0;dmg(g,t,n,self)}},
+      {id:'fenguang',name:'分光剑影',cost:3,type:'damage',realm:3,desc:'5伤→复制(每局限3次)',eff:(g,t,self)=>{dmg(g,t,5,self);if((self.fenguangCount||0)<3){self.fenguangCount=(self.fenguangCount||0)+1;let c=findCard('fenguang');if(c&&self.hand.length<7)self.hand.push({...c})}}},
+      // 化神
+      {id:'tianjian',name:'天剑',cost:5,type:'damage',realm:4,desc:'造成20点伤害',eff:(g,t,self)=>{dmg(g,t,20,self)}}, // BALANCE: 费6→5 终结点更加可用,
+      {id:'wujian',name:'无剑胜有剑',cost:5,type:'damage',realm:4,desc:'剑意×6伤→不消耗',eff:(g,t,self)=>{let n=(g.p.swordIntent||0)*6;dmg(g,t,n,self)}},
+    ]
+  },
+
+  baicao:{
+    icon:'🌿', name:'百草谷', title:'青莲药仙',
+    desc:'叠毒消耗，毒奶双修，稳扎稳打',
+    diff:'简单', diffStars:'★★', tag:'💊毒奶消耗',
+    passive:'所有治疗效果+20%',
+    cards:[
+      {id:'duteng',name:'毒藤术',cost:1,type:'special',realm:0,desc:'对手+2中毒',eff:(g,t,self)=>{t.poison=(t.poison||0)+2}},
+      {id:'huichun1',name:'回春术',cost:1,type:'heal',realm:0,desc:'恢复4HP',eff:(g,t,self)=>{heal(g,self,4)}},
+      {id:'caiyao',name:'采药',cost:0,type:'heal',realm:0,desc:'回复2HP+1药引',eff:(g,t,self)=>{heal(g,self,2);g.p.herb=(g.p.herb||0)+1}},
+      {id:'kurong',name:'枯荣诀',cost:1,type:'special',realm:0,desc:'2伤+1毒+回2HP',eff:(g,t,self)=>{dmg(g,t,2,self);t.poison=(t.poison||0)+1;heal(g,self,2)}},
+      {id:`baidu`,name:'百毒掌',cost:2,type:'special',realm:1,desc:'对手+4中毒',eff:(g,t,self)=>{t.poison=(t.poison||0)+4}},
+      {id:'baicaodan',name:'百草丹',cost:2,type:'heal',realm:1,desc:'回7HP+抽1牌',eff:(g,t,self)=>{heal(g,self,7);drawCards(g,self,1)}},
+	      {id:'yaowangding',name:'药王鼎',cost:2,type:'special',realm:1,desc:'药引翻倍',eff:(g,t,self)=>{self.herb=Math.min(10,(self.herb||0)*2)}},
+      {id:'wandu',name:'万毒噬心',cost:3,type:'damage',realm:2,desc:'药引×4伤→消耗药引',eff:(g,t,self)=>{let n=(g.p.herb||0)*4;g.p.herb=0;dmg(g,t,n,self)}},
+      {id:'xuanhu',name:'悬壶济世',cost:2,type:'heal',realm:2,desc:'回5HP+2药引',eff:(g,t,self)=>{heal(g,self,5);g.p.herb=(g.p.herb||0)+2}}
+,
+      {id:'yidugongdu',name:'以毒攻毒',cost:1,type:'special',realm:2,desc:'移除自身中毒转给对手翻倍',eff:(g,t,self)=>{if(self.poison>0){t.poison=(t.poison||0)+self.poison*2;self.poison=0;log('⚠ 以毒攻毒：转移'+t.poison+'层毒给对手')}}},
+      {id:`dubao`,name:'毒爆术',cost:3,type:'damage',realm:3,desc:'引爆中毒：每层2伤→清空',eff:(g,t,self)=>{let n=(t.poison||0)*2;t.poison=0;dmg(g,t,n,self)}},
+      {id:`huitian`,name:'回天',cost:3,type:'heal',realm:3,desc:'回12HP(每局限1次)',eff:(g,t,self)=>{if(!g.p.usedHuitian){heal(g,self,12);g.p.usedHuitian=true}}}, // BALANCE: 费4→3, 回15→12 更易打出但降低单发强度,
+      {id:'wanmuchun',name:'万木逢春',cost:4,type:'heal',realm:3,desc:'回12HP，移除身上所有毒',eff:(g,t,self)=>{heal(g,self,12);self.poison=0}}
+,
+      {id:'baicaojinghua',name:'百草精华',cost:2,type:'heal',realm:3,desc:'消耗所有药引，每2药回3HP',eff:(g,t,self)=>{let h=self.herb||0;if(h>0){let n=Math.floor(h/2)*3;self.herb=0;heal(g,self,n)}}},
+      {id:`shenglun`,name:'生死轮回',cost:5,type:'special',realm:4,desc:'+8中毒+回10HP',eff:(g,t,self)=>{t.poison=(t.poison||0)+8;heal(g,self,10)}},
+      {id:`duwang`,name:'毒王功',cost:3,type:'special',realm:4,desc:'永久：每层毒额外+1伤',eff:(g,t,self)=>{g.p.poisonMastery=(g.p.poisonMastery||0)+1}}, // BALANCE: 费4→3 降低门槛,
+    ]
+  },
+
+  xingxiu:{
+    icon:'🔮', name:'星宿阁', title:'玄机子',
+    desc:'控场布局，玩弄对手手牌和灵气',
+    diff:'困难', diffStars:'★★★', tag:'🌀控场大师',
+    passive:'手牌上限+2（可持9张）',
+    cards:[
+      {id:'xinghuo',name:'星火术',cost:1,type:'damage',realm:0,desc:'3伤+1星轨',eff:(g,t,self)=>{dmg(g,t,3,self);g.p.starTrack=(g.p.starTrack||0)+1}},
+      {id:'tuiyan',name:'推演',cost:1,type:'special',realm:0,desc:'抽1牌+1星轨',eff:(g,t,self)=>{drawCards(g,self,1);g.p.starTrack=(g.p.starTrack||0)+1}},
+      {id:'guaxiang',name:'卦象',cost:0,type:'special',realm:0,desc:'对手弃最高费牌',eff:(g,t,self)=>{forceDiscardHighest(g,t)}},
+      {id:'tianjibian',name:'天机变',cost:1,type:'special',realm:0,desc:'+2星轨',eff:(g,t,self)=>{g.p.starTrack=(g.p.starTrack||0)+2}},
+      {id:`douzhuan`,name:'斗转星移',cost:2,type:'damage',realm:1,desc:'5伤(消耗2星轨→再5伤)',eff:(g,t,self)=>{dmg(g,t,5,self);if((g.p.starTrack||0)>=2){g.p.starTrack-=2;dmg(g,t,5,self)}}},
+      {id:'fengling',name:'封灵符',cost:2,type:'special',realm:1,desc:'对手下回合-1灵气',eff:(g,t,self)=>{t.qiPenalty=(t.qiPenalty||0)+1}}, // BALANCE: -2→-1 防止前期过度压制,
+      {id:'xingpantu',name:'星盘推算',cost:1,type:'special',realm:1,desc:'抽1牌+2星轨',eff:(g,t,self)=>{drawCards(g,self,1);self.starTrack=(self.starTrack||0)+2}}
+,
+      {id:'xingyi',name:'星移',cost:0,type:'special',realm:1,desc:'将1张手牌洗回牌堆抽1牌',eff:(g,t,self)=>{if(self.hand.length>0){let r=Math.floor(Math.random()*self.hand.length);self.deck.push(self.hand.splice(r,1)[0]);shuffle(self.deck);drawCard(self);}}},
+      {id:'xingyun',name:'星陨',cost:3,type:'damage',realm:2,desc:'星轨×5伤→消耗',eff:(g,t,self)=>{let n=(g.p.starTrack||0)*5;g.p.starTrack=0;dmg(g,t,n,self)}},
+      {id:'tianjizhen',name:'天机阵',cost:2,type:'special',realm:2,desc:'抽2牌+2星轨',eff:(g,t,self)=>{drawCards(g,self,2);g.p.starTrack=(g.p.starTrack||0)+2}},
+      {id:'tianluo',name:'天罗地网',cost:4,type:'special',realm:3,desc:'对手下回合最多出2张牌',eff:(g,t,self)=>{t.maxPlayNext=(t.maxPlayNext||0)+2}},
+      {id:'qixing',name:'七星续命',cost:3,type:'heal',realm:3,desc:'回8HP+3星轨',eff:(g,t,self)=>{heal(g,self,8);g.p.starTrack=(g.p.starTrack||0)+3}}
+,
+      {id:'xingchenhuti',name:'星辰护体',cost:2,type:'defense',realm:3,desc:'+3星轨+每星轨2甲',eff:(g,t,self)=>{self.starTrack=(self.starTrack||0)+3;addArmor(g,self,(self.starTrack||0)*2)}},
+      {id:'tiandao',name:'天道轮回',cost:6,type:'special',realm:4,desc:'抽3牌+4星轨+手牌费-1',eff:(g,t,self)=>{drawCards(g,self,3);g.p.starTrack=(g.p.starTrack||0)+4;self.hand.forEach(c=>{if(c.cost>0)c.cost=Math.max(0,c.cost-1)})}}, // BALANCE: 星轨+5→+4 降低爆伤上限,
+      {id:'xingchen',name:'星辰灭世',cost:5,type:'damage',realm:4,desc:'星轨×6伤→消耗',eff:(g,t,self)=>{let n=(g.p.starTrack||0)*6;g.p.starTrack=0;dmg(g,t,n,self)}},
+      {id:'zhoutian',name:'周天星斗',cost:5,type:'damage',realm:4,desc:'星轨×8伤→消耗',eff:(g,t,self)=>{let n=(self.starTrack||0)*8;self.starTrack=0;dmg(g,t,n,self)}},
+    ]
+  },
+
+  jingang:{
+    icon:'🏛️', name:'金刚门', title:'不动明王',
+    desc:'叠最厚的甲，挨最毒的打，一掌反杀',
+    diff:'简单', diffStars:'★', tag:'🛡️铁壁反击',
+    passive:'每回合开始获得2护甲',
+    cards:[
+      {id:'tiebi',name:'铁壁',cost:1,type:'defense',realm:0,desc:'+4甲+1金刚印',eff:(g,t,self)=>{addArmor(g,self,4);g.p.vajra=(g.p.vajra||0)+1}},
+      {id:'jingangquan',name:'金刚拳',cost:1,type:'damage',realm:0,desc:'4伤+2甲',eff:(g,t,self)=>{dmg(g,t,4,self);addArmor(g,self,2)}},
+      {id:'chanding',name:'禅定',cost:0,type:'defense',realm:0,desc:'+3甲+1金刚印',eff:(g,t,self)=>{addArmor(g,self,3);g.p.vajra=(g.p.vajra||0)+1}},
+      {id:'numu',name:'怒目',cost:1,type:'damage',realm:0,desc:'3伤+1金刚印',eff:(g,t,self)=>{dmg(g,t,3,self);g.p.vajra=(g.p.vajra||0)+1}},
+      {id:'jinzhong',name:'金钟罩',cost:2,type:'defense',realm:1,desc:'+8甲',eff:(g,t,self)=>{addArmor(g,self,8)}},
+      {id:'xiangmozhang',name:'降魔掌',cost:2,type:'damage',realm:1,desc:'5伤(每5甲+2伤)',eff:(g,t,self)=>{let bonus=Math.floor((self.armor||0)/5)*2;dmg(g,t,5+bonus,self)}},
+      {id:'jingangpo',name:'金刚破',cost:3,type:'damage',realm:1,desc:'5伤+金刚印×2伤→消耗金刚印',eff:(g,t,self)=>{let v=self.vajra||0;self.vajra=0;dmg(g,t,5+v*2,self)}},
+      {id:'jingangnu',name:'金刚怒目',cost:2,type:'special',realm:2,desc:'本回合：你每受1伤对手受3伤',eff:(g,t,self)=>{g.p.retribution=(g.p.retribution||0)+1}}
+,
+      {id:'jinshenfanshe',name:'金身反射',cost:2,type:'defense',realm:2,desc:'本回合每次受伤反1伤',eff:(g,t,self)=>{self.retribution=(self.retribution||0)+1}},
+      {id:'sheshen',name:'舍身',cost:1,type:'defense',realm:2,desc:'-5HP, +10甲+2金刚印',eff:(g,t,self)=>{self.hp=Math.max(1,self.hp-5);addArmor(g,self,10);g.p.vajra=(g.p.vajra||0)+2}}, // BALANCE: 自伤4→5 提高舍身代价,
+      {id:'bupo',name:'不破金身',cost:3,type:'defense',realm:3,desc:'+10甲，本回合甲不消失',eff:(g,t,self)=>{addArmor(g,self,10);g.p.armorPersist=(g.p.armorPersist||0)+1}},
+      {id:'rulai',name:'如来神掌',cost:3,type:'damage',realm:3,desc:'金刚印×3伤(不消耗)',eff:(g,t,self)=>{let n=(g.p.vajra||0)*3;dmg(g,t,n,self)}}
+,
+      {id:'jingangchu',name:'金刚杵',cost:2,type:'damage',realm:3,desc:'6伤+金刚印数护甲',eff:(g,t,self)=>{dmg(g,t,6,self);addArmor(g,self,(self.vajra||0))}},
+      {id:'dajingang',name:'大金刚掌',cost:5,type:'damage',realm:4,desc:'护甲值伤→1/4甲转金刚印',eff:(g,t,self)=>{let a=self.armor||0;let n=a;self.armor=Math.floor(a*3/4);g.p.vajra=(g.p.vajra||0)+Math.floor(a/4);dmg(g,t,n,self)}}, // BALANCE: 半甲转印→1/4甲转印 削弱印积累速度,
+      {id:'budong',name:'不动明王真身',cost:6,type:'defense',realm:4,desc:'本回合无敌，下回合+12甲',eff:(g,t,self)=>{g.p.invincible=(g.p.invincible||0)+1;g.p.nextArmor=12}},
+      {id:'bumiejinshen',name:'不灭金身',cost:6,type:'defense',realm:4,desc:'下回合无敌+回满甲',eff:(g,t,self)=>{addArmor(g,self,15);self.invincible=(self.invincible||0)+1}},
+    ]
+  },
+
+  minghun:{
+    icon:'🏆', name:'命魂师', title:'命魂尊者',
+    desc:'原创流派！灵魂链接，让对手自取灭亡',
+    diff:'困难', diffStars:'★★★★', tag:'🪢命运绑定',
+    passive:'最多5条魂链。链接越多，对手越痛苦',
+    cards:[
+      {id:'hunsi',name:'魂丝',cost:1,type:'chain',realm:0,desc:'+1魂链。对手每回合受(链数)伤',eff:(g,t,self)=>{addChain(g,self);}},
+      {id:'lingfu',name:'灵缚',cost:1,type:'chain',realm:0,desc:'+1魂链。对手下回合-1灵',eff:(g,t,self)=>{addChain(g,self);t.qiPenalty=(t.qiPenalty||0)+1}}, // BALANCE: 灵压从"链数"改为固定-1 防止滚雪球,
+      {id:'gongming',name:'共鸣',cost:0,type:'chain',realm:0,desc:'+1魂链。自伤4',eff:(g,t,self)=>{addChain(g,self);self.hp=Math.max(1,self.hp-4);self.hp=Math.min(self.hp,self.maxHp)}}, // BALANCE: 自伤2→4 提高免费铺链代价,
+      {id:'hundun',name:'魂盾',cost:1,type:'defense',realm:0,desc:'获得4+魂链数护甲',eff:(g,t,self)=>{addArmor(g,self,4+(g.p.soulChains||0))}},
+      {id:'suohun',name:'锁魂阵',cost:2,type:'chain',realm:1,desc:'+2魂链。回4HP',eff:(g,t,self)=>{addChain(g,self);addChain(g,self);heal(g,self,4)}}, // BALANCE: 回血从链×2改为固定4 减少高链超额收益,
+      {id:'tongming',name:'同命连',cost:2,type:'chain',realm:1,desc:'+1魂链。抽(1+链/2)牌',eff:(g,t,self)=>{addChain(g,self);drawCards(g,self,1+Math.floor((g.p.soulChains||0)/2))}}, // BALANCE: 抽牌从1+链改为1+链/2 防止过牌滚雪球,
+      {id:'mingyun',name:'命运之锁',cost:2,type:'chain',realm:1,desc:'+1链。对手下回合灵气-3',eff:(g,t,self)=>{addChain(g,self);t.qiPenalty=(t.qiPenalty||0)+3}}
+,
+      {id:'mingxian',name:'命线',cost:1,type:'special',realm:1,desc:'转移对手2伤给自己魂链',eff:(g,t,self)=>{t.redirect=(t.redirect||0)+2;log('☋ 命线连接：对手伤害转移2点给魂链')}},
+      {id:'qihun',name:'七魂索命',cost:3,type:'damage',realm:2,desc:'链数×3伤',eff:(g,t,self)=>{let n=(g.p.soulChains||0)*3;dmg(g,t,n,self)}},
+      {id:'linghun',name:'灵魂共鸣',cost:2,type:'special',realm:2,desc:'每链：回2HP+对手1伤',eff:(g,t,self)=>{let n=g.p.soulChains||0;heal(g,self,n*2);dmg(g,t,n*1,self)}}, // BALANCE: 自疗3→2、伤敌2→1 降低单卡综合收益,
+      {id:'fuling',name:'缚灵大阵',cost:2,type:'chain',realm:3,desc:'+1链。对手下回合不出伤害牌',eff:(g,t,self)=>{addChain(g,self);t.noDamageNext=(t.noDamageNext||0)+1}},
+      {id:'hunbao',name:'魂爆',cost:3,type:'damage',realm:3,desc:'消耗4条魂链，每条5伤',eff:(g,t,self)=>{let n=Math.min(4,g.p.soulChains||0)*5;g.p.soulChains=Math.max(0,(g.p.soulChains||0)-4);renderChains();dmg(g,t,n,self)}},
+      {id:'linghunxuanwo',name:'灵魂漩涡',cost:4,type:'damage',realm:3,desc:'链数×4伤，回链数×2HP',eff:(g,t,self)=>{let n=self.soulChains||0;dmg(g,t,n*4,self);heal(g,self,n*2)}},
+      {id:'wanhun',name:'万魂归宗',cost:6,type:'chain',realm:4,desc:'+2链。魂链不可移除',eff:(g,t,self)=>{addChain(g,self);addChain(g,self);g.p.chainLocked=true}}, // BALANCE: 费5→6、+3链→+2链 减慢满链速度,
+      {id:'boli',name:'灵魂剥离',cost:6,type:'special',realm:4,desc:'魂链满5时立即获胜！',eff:(g,t,self)=>{if((g.p.soulChains||0)>=5){g.winner=self;endGame(g)}}}
+,
+      {id:'linghunjiasuo',name:'灵魂枷锁',cost:4,type:'chain',realm:4,desc:'+1链。对手每回合少抽1牌',eff:(g,t,self)=>{addChain(g,self);t.drawPenalty=(t.drawPenalty||0)+1}},
+    ]
+  }
+};
+
+function findCard(id){
+  for(let s of Object.values(SCHOOLS))for(let c of s.cards)if(c.id===id)return c;
+  return null;
+}
+
+// ============================================================
+//  游戏引擎
+// ============================================================
+
+let game=null;
+let selectedCard=null;
+
+function newGame(schoolKey,aiLevel=1,enemySchoolKey=null,mode='local'){
+  const school=SCHOOLS[schoolKey];
+  if(!school)return;
+  const deck=school.cards.map(c=>({...c}));
+  shuffle(deck);
+  game={
+    p:newPlayer(schoolKey),
+    e:newPlayer(schoolKey), // enemy, will be overwritten
+    turn:'player',
+    phase:'start',
+    turnCount:0,
+    winner:null,
+    gameOver:false,
+    aiLevel:aiLevel,
+    mode: mode, // TOURNAMENT: track game mode
+    cultivateMode: false,
+  };
+  // TOURNAMENT: use provided enemy school for tournament mode
+  if(mode === 'tournament' && enemySchoolKey){
+    game.e = newPlayer(enemySchoolKey);
+  } else {
+    // Enemy: random school
+    const keys=Object.keys(SCHOOLS);
+    const eKey=keys.find(k=>k!==schoolKey)||keys[0];
+    game.e=newPlayer(eKey);
+  }
+  // Draw hands
+  for(let i=0;i<5;i++){drawCard(game.p);drawCard(game.e);}
+  selectedCard=null;
+  renderAll();
+  log(`⚔️ 对战开始！${school.name} vs ${SCHOOLS[game.e.school].name}`);
+  game.phase='action';
+  renderAll();
+}
+
+function newPlayer(schoolKey){
+  const school=SCHOOLS[schoolKey];
+  // 每张牌多份，境界越高张数越少（练气8张→化神2张）
+  var cards=[];
+  var realmCounts=[8,6,4,3,2]; // 各境界每张牌的份数
+  school.cards.forEach(function(c){
+    var count=realmCounts[c.realm||0]||4;
+    for(var j=0;j<count;j++){cards.push(Object.assign({},c));}
+  });
+  return {
+    school:schoolKey,
+    hp:REALMS[0].maxHp,
+    maxHp:REALMS[0].maxHp,
+    // BIGHP: initial big HP = 3x starting maxHp
+    bigHP: REALMS[0].maxHp * 3,
+    maxBigHP: REALMS[0].maxHp * 3,
+    qi:2,
+    maxQi:10,
+    realm:0,
+    cultivation:0,
+    armor:0,
+    hand:[],
+    deck:cards,
+    discard:[],
+    swordIntent:0,
+    maxSwordIntent:6,
+    poison:0,
+    herb:0,
+    starTrack:0,
+    vajra:0,
+    soulChains:0,
+    chainLocked:false,
+    usedHuitian:false,
+    poisonMastery:0,
+    retribution:0,
+    armorPersist:0,
+    invincible:0,
+    nextArmor:0,
+    redirect:0,
+    qiPenalty:0,
+    maxPlayNext:0,
+    noDamageNext:0,
+    playsThisTurn:0,
+    hasCultivated:0,
+    fenguangCount:0,
+  };
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function drawCard(player){
+  if(player.deck.length===0){player.deck=shuffle(player.discard.splice(0));}
+  if(player.deck.length===0)return null;
+  // 优先抽当前境界及以下的牌
+  var c=null;
+  for(var i=player.deck.length-1;i>=0;i--){
+    if(player.deck[i].realm<=player.realm){c=player.deck.splice(i,1)[0];break;}
+  }
+  // 如果当前境界没牌了，就从牌堆顶随机抽一张（突破后就会出现）
+  if(!c)c=player.deck.pop();
+  if(!c)return null;
+  if(player.hand.length<9)player.hand.push(c);
+  else player.discard.push(c);
+  return c;
+}
+
+function drawCards(g,player,n){
+  for(let i=0;i<n;i++)drawCard(player);
+}
+
+function dmg(g,target,n,source,reflectDepth){
+  if(!target||target.hp<=0||n<=0||g.gameOver)return;
+  reflectDepth=reflectDepth||0;
+  if(reflectDepth>3)return;
+  if(source&&source.jianzhenBuff&&source.jianzhenBuff>0&&target&&target!==source){n+=1;} // 防止无限反射
+  // 无敌
+  if(target.invincible>0)return;
+  // 金刚怒目反伤
+  if(target.retribution>0&&source&&source!==target&&source.hp>0){
+    log('🔥 金刚怒目反伤！');
+    dmg(g,source,3,target,reflectDepth+1);
+  }
+  // 命线转移 (玩家主动转移伤害给对手)
+  if(target.redirect>0&&source){
+    let transferred=Math.min(target.redirect,n);
+    target.redirect-=transferred;
+    dmg(g,source,transferred,target,reflectDepth+1);
+    n-=Math.floor(transferred/2);
+    if(n<=0)return;
+  }
+  // 魂链被动1: 你受伤时对手受50%反射
+  if(target.soulChains>=1&&source&&source!==target&&source.hp>0){
+    let reflect=Math.floor(n*0.5);
+    if(reflect>0){
+      log(`🪢 魂链反射${reflect}点伤害！`);
+      dmg(g,source,reflect,target,reflectDepth+1);
+    }
+    // 魂链被动2: 你获得对手消耗灵气的一半（在对手出牌时处理）
+  }
+  // 护甲减伤
+  let armor=target.armor||0;
+  if(armor>0){
+    if(armor>=n){target.armor=armor-n;n=0;}
+    else{n-=armor;target.armor=0;}
+  }
+  if(n<=0)return;
+  target.hp=Math.max(0,target.hp-n);
+  log(`💥 ${target===g.p?'你':'对手'}受到${n}点伤害 (剩余${target.hp}HP)`, 'damage');
+  // 浮动伤害数字
+  if(target===g.p) showFloatingText('-'+n, 'dmg', '30%', '35%');
+  else showFloatingText('-'+n, 'dmg', '70%', '15%');
+  // VFX: 伤害溅射粒子
+  if(typeof spawnParticles === 'function' && VFX_ENABLED && n>0){
+    const bf=document.getElementById('battlefield');
+    if(bf){const r=bf.getBoundingClientRect();spawnParticles(r.width/2,target===g.p?r.height*0.7:r.height*0.3,Math.min(n*2,25),'#ff4040',150+n*5);}
+    if(n>=8&&typeof flashScreen==='function')flashScreen(200);
+  }
+  if(target.hp<=0){g.winner=source||g.p;endGame(g);}
+}
+
+function heal(g,target,n,depth){
+  if(!target||n<=0)return;
+  depth=depth||0;
+  if(depth>3)return;
+  // 百草谷被动
+  if(target.school==='baicao')n=Math.ceil(n*1.2);
+  target.hp=Math.min(target.maxHp,target.hp+n);
+  if(n>0&&target===g.p)showFloatingText('+'+n,'heal','30%','45%');
+  if(n>0&&target===g.e)showFloatingText('+'+n,'heal','70%','25%');
+  // VFX: 治疗粒子
+  if(typeof spawnParticles === 'function' && VFX_ENABLED && n>0){
+    const bf=document.getElementById('battlefield');
+    if(bf){const r=bf.getBoundingClientRect();spawnParticles(r.width/2,target===g.p?r.height*0.7:r.height*0.3,Math.min(n/2+2,12),'#40d040',100);}
+  }
+  // 魂链被动3: 对手回血时，命魂师回30%（双向）
+  if(target!==g.p&&g.p.soulChains>=3){
+    let share=Math.floor(n*0.3);
+    if(share>0){
+      g.p.hp=Math.min(g.p.maxHp,g.p.hp+share);
+      log(`🪢 魂链共疗：你恢复${share}HP`);
+    }
+  }
+  if(target!==g.e&&g.e.soulChains>=3){
+    let share=Math.floor(n*0.3);
+    if(share>0){
+      g.e.hp=Math.min(g.e.maxHp,g.e.hp+share);
+      log(`🪢 魂链共疗：对手恢复${share}HP`);
+    }
+  }
+}
+
+function addArmor(g,target,n){
+  if(!target||n<=0)return;
+  target.armor=(target.armor||0)+n;
+}
+
+function addChain(g,player){
+  if(player.soulChains>=5)return;
+  player.soulChains=(player.soulChains||0)+1;
+  renderChains();
+  setTimeout(chainPulseEffect,50);
+  // VFX: 魂链连接粒子
+  if(typeof spawnParticles === 'function' && VFX_ENABLED){
+    var bf=document.getElementById('battlefield');
+    if(bf){var r=bf.getBoundingClientRect();spawnParticles(r.width/2,r.height/2,10,'#a060e0',120);}
+  }
+}
+
+function forceDiscardHighest(g,target){
+  if(!target.hand.length)return;
+  let maxCost=-1,idx=-1;
+  target.hand.forEach((c,i)=>{if(c.cost>maxCost){maxCost=c.cost;idx=i}});
+  if(idx>=0){let d=target.hand.splice(idx,1);target.discard.push(d[0]);}
+}
+
+// ============================================================
+//  UI 特效函数
+// ============================================================
+
+function showFloatingText(text, type, x, y){
+  const el=document.createElement('div');
+  el.className='float-dmg float-'+type;
+  el.textContent=text;
+  el.style.left=x||'50%';
+  el.style.top=y||'40%';
+  el.style.transform='translateX(-50%)';
+  document.getElementById('battlefield').appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+function cardFlyOut(el, callback){
+  el.classList.add('card-fly');
+  setTimeout(()=>{el.classList.remove('card-fly');if(callback)callback();},500);
+}
+
+function screenShake(){
+  const bf=document.getElementById('battlefield');
+  bf.classList.remove('shake');
+  void bf.offsetWidth; // reflow
+  bf.classList.add('shake');
+  setTimeout(()=>bf.classList.remove('shake'),400);
+}
+
+function tribulationEffect(){
+  const bf=document.getElementById('battlefield');
+  bf.classList.remove('tribulation');
+  void bf.offsetWidth;
+  bf.classList.add('tribulation');
+  // VFX: 柔化版 - 仅轻微光效，无震动无闪烁
+  if(typeof spawnParticles === 'function' && VFX_ENABLED){
+    var r=bf.getBoundingClientRect();
+    spawnParticles(r.width/2,r.height*0.4,5,'#c8a030',90);
+    spawnParticles(r.width/2,r.height*0.4,3,'#e0d0a0',60);
+  }
+  setTimeout(()=>bf.classList.remove('tribulation'),700);
+}
+
+function realmUpEffect(){
+  const el=document.getElementById('playerRealm');
+  el.classList.remove('realmUp');
+  void el.offsetWidth;
+  el.classList.add('realmUp');
+  setTimeout(()=>el.classList.remove('realmUp'),900);
+  // VFX: 柔化晋升光效
+  if(typeof spawnParticles === 'function' && VFX_ENABLED){
+    var p=document.getElementById('battlefield');
+    if(p){var r=p.getBoundingClientRect();spawnParticles(r.width/2,r.height/2,6,'#d4a840',120);}
+  }
+}
+
+function showTurnPopup(text){
+  const old=document.querySelector('.turnPopup');
+  if(old)old.remove();
+  const el=document.createElement('div');
+  el.className='turnPopup';
+  el.textContent=text;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1600);
+}
+
+function chainPulseEffect(){
+  const links=document.querySelectorAll('.chainLink.active');
+  links.forEach(el=>{
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+    setTimeout(()=>el.classList.remove('pulse'),700);
+  });
+}
+
+function log(msg, type){
+  const el=document.getElementById('logArea');
+  if(!el)return;
+  const d=document.createElement('div');
+  d.textContent=msg;
+  if(type)d.className='log-'+type;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+  if(el.children.length>30)el.removeChild(el.firstChild);
+}
+
+function showCenterMsg(text){
+  const el=document.getElementById('centerMsg');
+  if(!el)return;
+  el.innerHTML='<span>'+text+'</span>';
+  setTimeout(()=>el.innerHTML='',2000);
+}
+
+function endGame(g){
+  if(g.gameOver)return;
+  g.gameOver=true;
+  // TOURNAMENT: handle tournament match end
+  if(g.mode === 'tournament' && tournament){
+    tournamentEndMatch(g);
+    return;
+  }
+  // BIGHP: Local mode big HP deduction
+  var bigHPDestroyed = false;
+  if(g.mode !== 'online') {
+    var loser = (g.winner === g.p) ? g.e : g.p;
+    var rounds = g.turnCount || 1;
+    var hpDiff = Math.abs(g.p.hp - g.e.hp);
+    var damage = 5 + (rounds * 1) + Math.max(0, 10 - hpDiff);
+    var finalDamage = Math.max(5, Math.min(30, damage));
+    loser.bigHP = Math.max(0, loser.bigHP - finalDamage);
+    if(loser.bigHP <= 0 && loser === g.p) {
+      bigHPDestroyed = true;
+    }
+  }
+  const win=g.winner===g.p;
+  if(bigHPDestroyed) {
+    const overlay=document.createElement('div');
+    overlay.className='modalOverlay';
+    overlay.innerHTML='<div class="modalBox"><h2>💀 道基尽毁</h2><p>你的修为根基已被彻底摧毁，需要重新修炼！</p><button class="modalBtn" onclick="this.closest(\'.modalOverlay\').remove();showSelect()">返回选角</button></div>';
+    document.body.appendChild(overlay);
+  } else {
+    const overlay=document.createElement('div');
+    overlay.className='modalOverlay';
+    overlay.innerHTML=`<div class="modalBox"><h2>${win?'🎉 飞升成功！':'💀 身死道消'}</h2><p>${win?'你战胜了对手，大道可期！':'天劫难渡，来世再修……'}</p><button class="modalBtn" onclick="this.closest('.modalOverlay').remove();showSelect()">再来一局</button></div>`;
+    document.body.appendChild(overlay);
+  }
+}
+
+// ============================================================
+//  AI — AI-ENHANCE: 完全重写的智能AI系统
+// ============================================================
+
+// AI-ENHANCE: 血量等级评估
+function aiHealthLevel(hp, maxHp) {
+  const ratio = hp / maxHp;
+  if (ratio <= 0.25) return 'critical';
+  if (ratio <= 0.40) return 'low';
+  if (ratio <= 0.65) return 'medium';
+  return 'safe';
+}
+
+// AI-ENHANCE: 估算AI本回合最大输出伤害（用于斩杀判断）
+function aiEstimateMaxDamage(g) {
+  const ai = g.e, pl = g.p;
+  let total = 0, qi = ai.qi;
+  const cards = [...ai.hand].sort((a,b) => b.cost - a.cost);
+  for (let ci = 0; ci < cards.length; ci++) {
+    const c = cards[ci];
+    if (c.cost <= qi) {
+      qi -= c.cost;
+      if (c.id === 'qingfeng') total += 4;
+      else if (c.id === 'lianzhan') total += 6;
+      else if (c.id === 'jianqijue') total += 3;
+      else if (c.id === 'jianwu') total += 3;
+      else if (c.id === 'pojunjian') total += 7 + ((ai.swordIntent||0) >= 3 ? 3 : 0);
+      else if (c.id === 'wanjianjue') total += (ai.swordIntent||0) * 4;
+      else if (c.id === 'yijianpo') total += 10 + (ai.swordIntent||0) * 3;
+      else if (c.id === 'fenguang') total += 5;
+      else if (c.id === 'tianjian') total += 20;
+      else if (c.id === 'wujian') total += (ai.swordIntent||0) * 6;
+      else if (c.id === 'dubao') total += (pl.poison||0) * 2;
+      else if (c.id === 'wandu') total += (ai.herb||0) * 4;
+      else if (c.id === 'qihun') total += (ai.soulChains||0) * 3;
+      else if (c.id === 'hunbao') total += (ai.soulChains||0) * 5;
+      else if (c.id === 'xinghuo') total += 3;
+      else if (c.id === 'douzhuan') total += 5 + ((ai.starTrack||0) >= 2 ? 5 : 0);
+      else if (c.id === 'xingyun') total += (ai.starTrack||0) * 5;
+      else if (c.id === 'xingchen') total += (ai.starTrack||0) * 6;
+      else if (c.id === 'jingangquan') total += 4;
+      else if (c.id === 'numu') total += 3;
+      else if (c.id === 'xiangmozhang') total += 5 + Math.floor((ai.armor||0) / 5) * 2;
+      else if (c.id === 'rulai') total += (ai.vajra||0) * 3;
+      else if (c.id === 'dajingang') total += (ai.armor||0);
+      else if (c.id === 'kurong') total += 2;
+      // 蓄力型卡牌估算潜在伤害（为后续爆发做准备）
+      else if (c.id === 'xujiianshi') total += 4;
+      else if (c.id === 'caiyao') total += 1;
+      else if (c.id === 'tianjibian') total += 2;
+      else if (c.id === 'tianjizhen') total += 3;
+    }
+  }
+  return Math.max(0, total - (pl.armor||0));
+}
+
+// AI-ENHANCE: 判断能否安全突破（血量足够承受天劫且有余裕）
+function aiShouldBreakthrough(g) {
+  const p = g.e;
+  if (p.realm >= 4) return false;
+  if (p.cultivation < REALMS[p.realm].breakthroughNeed) return false;
+  const dmg = tribulationDamage(p.realm);
+  return p.hp > dmg + Math.floor(p.maxHp * 0.35);
+}
+
+// AI-ENHANCE: 智能选择修炼时丢弃的牌（保留核心爆发牌和高价值牌）
+function aiBestDiscardIndex(player) {
+  let idx = -1, bestScore = Infinity;
+  player.hand.forEach((c, i) => {
+    let s = c.cost;
+    // 珍贵0费功能性牌绝不弃
+    if (c.id === 'xujiianshi' || c.id === 'chanding' || c.id === 'caiyao' || c.id === 'gongming') s += 5;
+    // 核心爆发牌不弃（给极高保留分）
+    if (c.id === 'hunbao' || c.id === 'dubao' || c.id === 'wanjianjue' || c.id === 'rulai' ||
+        c.id === 'boli' || c.id === 'tianjian' || c.id === 'yijianpo' || c.id === 'wujian' ||
+        c.id === 'dajingang' || c.id === 'xingchen' || c.id === 'tiandao' || c.id === 'wanhun' ||
+        c.id === 'shenglun' || c.id === 'budong' || c.id === 'huitian' || c.id === 'bupo') s -= 5;
+    // 伤害/特殊牌比纯防御牌保留价值高
+    if (c.type === 'damage' || c.type === 'special') s -= 2;
+    if (c.type === 'defense') s += 1;
+    if (c.type === 'chain' && player.school === 'minghun') s -= 3;
+    if (s < bestScore) { bestScore = s; idx = i; }
+  });
+  // 保底：如果没找到，弃最低费
+  if (idx < 0) {
+    let minC = 99;
+    player.hand.forEach((c, i) => { if (c.cost < minC) { minC = c.cost; idx = i; }});
+  }
+  return idx;
+}
+
+// AI-ENHANCE: 对手宗门反制优先级（困难模式根据对手状态调整策略）
+function aiCounterPriority(g) {
+  const opp = g.p;
+  if (opp.school === 'minghun' && (opp.soulChains||0) >= 2) return 10;
+  if (opp.school === 'tianjian' && (opp.swordIntent||0) >= 4) return 8;
+  if (opp.school === 'baicao' && (opp.poison||0) >= 5) return 7;
+  if (opp.school === 'xingxiu' && (opp.starTrack||0) >= 4) return 6;
+  if (opp.school === 'jingang' && (opp.armor||0) >= 10) return 5;
+  return 0;
+}
+
+// AI-ENHANCE: 宗门连招系统（困难模式核心，为每个宗门实现独特AI行为模式）
+function aiExecuteSectCombo(g) {
+  const ai = g.e, pl = g.p;
+  const school = ai.school;
+  const hpLevel = aiHealthLevel(ai.hp, ai.maxHp);
+  const sc = ai.soulChains || 0;
+
+  // === 天剑宗：先攒剑意，剑意≥3时爆发 ===
+  if (school === 'tianjian') {
+    const intent = ai.swordIntent || 0;
+    if (intent >= 3) {
+      if (playCardById(ai, pl, 'yijianpo')) return true;
+      if (playCardById(ai, pl, 'wanjianjue')) return true;
+      if (playCardById(ai, pl, 'wujian')) return true;
+    }
+    if (ai.hand.some(c => c.id === 'yijianpo' || c.id === 'wanjianjue' || c.id === 'wujian')) {
+      if (playCardById(ai, pl, 'xujiianshi')) return true;
+      if (playCardById(ai, pl, 'jianqijue')) return true;
+    }
+    if (intent < 5 && playCardById(ai, pl, 'xujiianshi')) return true;
+    if (playCardById(ai, pl, 'jianxin')) return true;
+    if (playCardById(ai, pl, 'jianwu')) return true;
+    if (playCardById(ai, pl, 'pojunjian')) return true;
+    if (playCardById(ai, pl, 'lianzhan')) return true;
+    if (playCardById(ai, pl, 'fenguang')) return true;
+    if (playCardById(ai, pl, 'qingfeng')) return true;
+    return false;
+  }
+
+  // === 百草谷：先叠毒叠药引，毒层高后用毒爆技能 ===
+  if (school === 'baicao') {
+    if ((pl.poison||0) >= 4 && playCardById(ai, pl, 'dubao')) return true;
+    if ((pl.poison||0) >= 6 && playCardById(ai, pl, 'shenglun')) return true;
+    if ((ai.herb||0) >= 3 && playCardById(ai, pl, 'wandu')) return true;
+    if ((pl.poison||0) < 6) {
+      if (playCardById(ai, pl, 'baidu')) return true;
+      if (playCardById(ai, pl, 'duteng')) return true;
+      if (playCardById(ai, pl, 'kurong')) return true;
+    }
+    if (playCardById(ai, pl, 'xuanhu')) return true;
+    if (playCardById(ai, pl, 'caiyao')) return true;
+    if (hpLevel === 'low' || hpLevel === 'critical') {
+      if (playCardById(ai, pl, 'huitian')) return true;
+      if (playCardById(ai, pl, 'baicaodan')) return true;
+      if (playCardById(ai, pl, 'huichun1')) return true;
+    }
+    if (playCardById(ai, pl, 'duwang')) return true;
+    return false;
+  }
+
+  // === 星宿阁：控制对手灵气和手牌，攒星轨后爆发 ===
+  if (school === 'xingxiu') {
+    if (pl.qi >= 3 && playCardById(ai, pl, 'fengling')) return true;
+    if (pl.hand.length >= 5 && playCardById(ai, pl, 'guaxiang')) return true;
+    if (playCardById(ai, pl, 'tianluo')) return true;
+    if ((ai.starTrack||0) >= 4) {
+      if (playCardById(ai, pl, 'xingchen')) return true;
+      if (playCardById(ai, pl, 'xingyun')) return true;
+    }
+    if ((ai.starTrack||0) < 4) {
+      if (playCardById(ai, pl, 'tianjizhen')) return true;
+      if (playCardById(ai, pl, 'tianjibian')) return true;
+      if (playCardById(ai, pl, 'tuiyan')) return true;
+      if (playCardById(ai, pl, 'xinghuo')) return true;
+    }
+    if (playCardById(ai, pl, 'tiandao')) return true;
+    if (hpLevel === 'low' || hpLevel === 'critical') {
+      if (playCardById(ai, pl, 'qixing')) return true;
+    }
+    if ((ai.starTrack||0) >= 2 && playCardById(ai, pl, 'douzhuan')) return true;
+    return false;
+  }
+
+  // === 金刚门：叠护甲+金刚印，护甲高时打反击 ===
+  if (school === 'jingang') {
+    if ((ai.vajra||0) >= 3 && playCardById(ai, pl, 'rulai')) return true;
+    if ((ai.armor||0) >= 8) {
+      if (playCardById(ai, pl, 'dajingang')) return true;
+      if (playCardById(ai, pl, 'xiangmozhang')) return true;
+    }
+    if (hpLevel === 'low' && playCardById(ai, pl, 'jingangnu')) return true;
+    if (playCardById(ai, pl, 'bupo')) return true;
+    if (hpLevel === 'low' || hpLevel === 'critical') {
+      if (playCardById(ai, pl, 'budong')) return true;
+    }
+    if (playCardById(ai, pl, 'jinzhong')) return true;
+    if (playCardById(ai, pl, 'tiebi')) return true;
+    if (playCardById(ai, pl, 'chanding')) return true;
+    if (playCardById(ai, pl, 'jingangquan')) return true;
+    if (playCardById(ai, pl, 'numu')) return true;
+    if ((ai.armor||0) < 6 && ai.hp > 12 && playCardById(ai, pl, 'sheshen')) return true;
+    return false;
+  }
+
+  // === 命魂师：全力铺魂链到5层，铺链期间用防御牌自保 ===
+  if (school === 'minghun') {
+    if (sc >= 4 && playCardById(ai, pl, 'boli')) return true;
+    if (sc < 5) {
+      if (playCardById(ai, pl, 'wanhun')) return true;
+      if (playCardById(ai, pl, 'suohun')) return true;
+      if (playCardById(ai, pl, 'lingfu')) return true;
+      if (playCardById(ai, pl, 'hunsi')) return true;
+      if (playCardById(ai, pl, 'gongming')) return true;
+      if (playCardById(ai, pl, 'tongming')) return true;
+    }
+    if (sc >= 3) {
+      if (playCardById(ai, pl, 'hunbao')) return true;
+      if (playCardById(ai, pl, 'linghun')) return true;
+      if (playCardById(ai, pl, 'qihun')) return true;
+    }
+    if (hpLevel === 'low' || hpLevel === 'critical') {
+      if (playCardById(ai, pl, 'hundun')) return true;
+    }
+    if (playCardById(ai, pl, 'fuling')) return true;
+    return false;
+  }
+
+  return false;
+}
+
+// AI-ENHANCE: 智能评分出牌（根据当前局势为每张牌打分，综合血量、宗门、牌型等因素）
+function aiPlayBestCard(g, preferDamage, preferDefense) {
+  const ai = g.e, pl = g.p;
+  const hpLevel = aiHealthLevel(ai.hp, ai.maxHp);
+
+  // 筛选可用的卡牌（费用足够）
+  const candidates = [];
+  for (let ci = 0; ci < ai.hand.length; ci++) {
+    if (ai.hand[ci].cost <= ai.qi) candidates.push(ai.hand[ci]);
+  }
+  if (candidates.length === 0) return false;
+
+  // 为每张牌根据当前局势评分
+  const scored = [];
+  for (let ci = 0; ci < candidates.length; ci++) {
+    const c = candidates[ci];
+    let score = 0;
+    if (c.type === 'damage') score += 10;
+    if (c.type === 'special') score += 7;
+    if (c.type === 'defense' || c.type === 'heal') {
+      if (hpLevel === 'critical') score += 30;
+      else if (hpLevel === 'low') score += 20;
+      else if (hpLevel === 'medium') score += 10;
+      else score += 3;
+    }
+    if (c.type === 'chain' && ai.school === 'minghun') score += 25;
+    if (c.cost === 0) score += 5;
+    if (preferDamage && (c.type === 'damage' || c.type === 'special')) score += 15;
+    if (preferDefense && (c.type === 'defense' || c.type === 'heal')) score += 15;
+    scored.push({card: c, score: score});
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+
+  for (let si = 0; si < scored.length; si++) {
+    const idx = ai.hand.indexOf(scored[si].card);
+    if (idx >= 0 && aiPlayCard(ai, pl, scored[si].card, idx)) return true;
+  }
+  return false;
+}
+
+// AI-ENHANCE: 难度0 — 简单模式（基础生存直觉）
+function aiSimple(g) {
+  const ai = g.e, pl = g.p;
+  const hpLevel = aiHealthLevel(ai.hp, ai.maxHp);
+
+  if (hpLevel === 'critical' || hpLevel === 'low') {
+    if (aiPlayBestCard(g, false, true)) return;
+  }
+  if ((ai.soulChains||0) < 3 && ai.hand.some(c => c.type === 'chain')) {
+    if (playChainCard(ai, pl)) return;
+  }
+  if (aiPlayBestCard(g, true, false)) return;
+  if (aiPlayBestCard(g, false, true)) return;
+  if (ai.qi >= 1 && ai.hand.length > 0 && ai.realm < 4) tryCultivate(ai);
+}
+
+// AI-ENHANCE: 难度1 — 普通模式（资源管理 + 血线意识 + 合理运营）
+function aiNormal(g) {
+  const ai = g.e, pl = g.p;
+  const hpLevel = aiHealthLevel(ai.hp, ai.maxHp);
+  const canBT = ai.realm < 4 && ai.cultivation >= REALMS[ai.realm].breakthroughNeed;
+
+  // 安全突破
+  if (canBT && (hpLevel === 'safe' || hpLevel === 'medium') && aiShouldBreakthrough(g)) {
+    if (tryBreakthrough(ai)) { renderAll(); return; }
+    if (g.gameOver) return;
+  }
+
+  // 命魂师优先铺链
+  if (ai.school === 'minghun' && (ai.soulChains||0) < 4) {
+    if (playChainCard(ai, pl)) return;
+  }
+
+  // 血量危急 → 防御回血优先
+  if (hpLevel === 'critical' || hpLevel === 'low') {
+    if (aiPlayBestCard(g, false, true)) return;
+    if (aiPlayBestCard(g, true, false)) return;
+    if (ai.hand.length > 0 && ai.realm < 4) { tryCultivate(ai); return; }
+  }
+
+  // 中等血量 → 攻守均衡，带随机性
+  if (hpLevel === 'medium') {
+    if (Math.random() < 0.4 && aiPlayBestCard(g, false, true)) return;
+    if (aiPlayBestCard(g, true, false)) return;
+    if (aiPlayBestCard(g, false, true)) return;
+    if (ai.qi >= 1 && ai.hand.length > 0 && ai.realm < 4 &&
+        ai.cultivation < REALMS[ai.realm].breakthroughNeed) {
+      tryCultivate(ai);
+    }
+    return;
+  }
+
+  // 健康血量 → 进攻为主，灵气盈余则修炼
+  if (aiPlayBestCard(g, true, false)) return;
+  if (ai.qi >= 1 && ai.hand.length > 0 && ai.realm < 4 &&
+      ai.cultivation < REALMS[ai.realm].breakthroughNeed) {
+    tryCultivate(ai);
+    return;
+  }
+  if (aiPlayBestCard(g, false, true)) return;
+}
+
+// AI-ENHANCE: 难度2 — 困难模式（斩杀计算 + 连招 + 反制 + 最优运营）
+function aiHard(g) {
+  const ai = g.e, pl = g.p;
+  const hpLevel = aiHealthLevel(ai.hp, ai.maxHp);
+  const canBT = ai.realm < 4 && ai.cultivation >= REALMS[ai.realm].breakthroughNeed;
+
+  // 1. 斩杀判断：估算本回合能否击杀对手，能则全力输出
+  const estDmg = aiEstimateMaxDamage(g);
+  if (estDmg >= pl.hp + (pl.armor||0)) {
+    aiExecuteSectCombo(g);
+    while (aiPlayBestCard(g, true, false));
+    if (g.gameOver) return;
+  }
+
+  // 2. 宗门反制：对手关键状态高时针对性压制
+  const counter = aiCounterPriority(g);
+  if (counter >= 5) {
+    if (g.p.school === 'minghun' || g.p.school === 'tianjian') {
+      if (aiPlayBestCard(g, true, false)) return;
+    }
+  }
+
+  // 3. 安全突破检查
+  if (canBT && aiShouldBreakthrough(g)) {
+    if (tryBreakthrough(ai)) { renderAll(); return; }
+    if (g.gameOver) return;
+  }
+
+  // 4. 执行宗门连招
+  if (aiExecuteSectCombo(g)) return;
+
+  // 5. 命魂师持续铺链
+  if (ai.school === 'minghun' && (ai.soulChains||0) < 5) {
+    if (playChainCard(ai, pl)) return;
+  }
+
+  // 6. 血量危机管理
+  if (hpLevel === 'critical') {
+    if (playCardById(ai, pl, 'budong')) return;
+    if (playCardById(ai, pl, 'bupo')) return;
+    if (aiPlayBestCard(g, false, true)) return;
+    if (canBT && tryBreakthrough(ai)) { renderAll(); return; }
+    if (ai.hand.length > 0 && ai.realm < 4) tryCultivate(ai);
+    return;
+  }
+  if (hpLevel === 'low') {
+    if (aiPlayBestCard(g, false, true)) return;
+    if (aiPlayBestCard(g, true, false)) return;
+    if (ai.qi >= 1 && ai.hand.length > 0 && ai.realm < 4) tryCultivate(ai);
+    return;
+  }
+
+  // 7. 正常回合：优先打伤害/连招，余灵气则修炼
+  if (aiPlayBestCard(g, true, false)) return;
+  if (ai.qi >= 2 && ai.hand.length > 0 && ai.realm < 4 &&
+      ai.cultivation < REALMS[ai.realm].breakthroughNeed) {
+    tryCultivate(ai);
+    return;
+  }
+  if (aiPlayBestCard(g, false, true)) return;
+}
+
+// AI-ENHANCE: 主AI调度函数（按难度分发）
+function aiTurn(g) {
+  const ai = g.e, pl = g.p;
+  if (g.gameOver || !ai) return;
+
+  const lvl = g.aiLevel || 1;
+
+  if (lvl === 0) {
+    aiSimple(g);
+  } else if (lvl === 1) {
+    aiNormal(g);
+  } else {
+    aiHard(g);
+  }
+
+  // 回合结束：清理手牌上限
+  const eMaxHand = 7 + (ai.school === 'xingxiu' ? 2 : 0);
+  while (ai.hand.length > eMaxHand) ai.discard.push(ai.hand.pop());
+  ai.playsThisTurn = 0;
+  renderAll();
+}
+
+// AI-ENHANCE: 智能弃牌修炼（保留核心牌，弃低价值牌）
+function tryCultivate(player){
+  if(player.realm>=4)return false;
+  if(player.cultivation>=REALMS[player.realm].breakthroughNeed)return false;
+  if(player.hand.length===0)return false;
+  // AI-ENHANCE: 用aiBestDiscardIndex智能选择丢弃的牌
+  const idx = aiBestDiscardIndex(player);
+  if (idx < 0) return false;
+  const cost = player.hand[idx].cost;
+  player.discard.push(player.hand.splice(idx, 1)[0]);
+  const gain = Math.max(1, cost * 2);
+  player.cultivation = Math.min(player.cultivation + gain, REALMS[player.realm].breakthroughNeed);
+  addArmor(game, player, 2);
+  return true;
+}
+
+function tryBreakthrough(player){
+  if(player.realm>=4)return false;
+  if(player.cultivation<REALMS[player.realm].breakthroughNeed)return false;
+  const newRealm=player.realm+1;
+  const dmg=tribulationDamage(newRealm-1);
+  player.hp-=dmg;
+  if(player.hp<=0){
+    // TOURNAMENTFIX: Opponent of the breakthrough player wins (works with autoPlayPlayerAI swap too)
+    game.winner = (player === game.e) ? game.p : game.e;
+    endGame(game);
+    return false;
+  }
+  player.realm=newRealm;
+  player.hp=REALMS[newRealm].maxHp;
+  player.maxHp=REALMS[newRealm].maxHp;
+  player.cultivation=0;
+  log(`🌩️ ${player===game.p?'你':'对手'}突破至${REALMS[newRealm].name}！`);
+  showCenterMsg(`🔥 突破！${REALMS[newRealm].name}`);
+  return true;
+}
+
+function aiPlayCard(player,target,card,idx){
+  // 天罗地网限制
+  if((player.maxPlayNext||0)>0&&player.playsThisTurn>=player.maxPlayNext)return false;
+  // 缚灵大阵限制
+  if(player.noDamageNext>0&&card.type==='damage')return false;
+  const cost=card.cost;
+  player.qi-=cost;
+  if(typeof idx==='number')player.hand.splice(idx,1);
+  else player.hand=player.hand.filter(c=>c!==card);
+  if(card.eff)card.eff(game,target,player);
+  player.discard.push(card);
+  player.playsThisTurn=(player.playsThisTurn||0)+1;
+  // 魂链被动2: 玩家有魂链时，AI(对手)出牌玩家获得一半灵气
+  if(game.p.soulChains>=2){
+    let gain=Math.floor(cost/2);
+    if(gain>0){
+      game.p.qi=Math.min(game.p.maxQi,game.p.qi+gain);
+      log(`🪢 魂链吸灵：你获得${gain}灵气`);
+    }
+  }
+  // 金丹被动：每第3张伤害牌额外2伤
+  if(player.realm>=2&&player.playsThisTurn%3===0&&card.type==='damage'){
+    dmg(game,target,2,player);
+    log('💥 金丹被动：额外2点伤害！');
+  }
+  return true;
+}
+
+function playBestDamageCard(player,target){
+  let candidates=player.hand.filter(c=>c.cost<=player.qi&&(c.type==='damage'||c.type==='special'));
+  if(candidates.length===0)return false;
+  candidates.sort((a,b)=>b.cost-a.cost);
+  return aiPlayCard(player,target,candidates[0]);
+}
+
+function playBestDefenseCard(player,target){
+  let candidates=player.hand.filter(c=>c.cost<=player.qi&&(c.type==='defense'||c.type==='heal'));
+  if(candidates.length===0)return false;
+  candidates.sort((a,b)=>b.cost-a.cost);
+  return aiPlayCard(player,target,candidates[0]);
+}
+
+function playChainCard(player,target){
+  let candidates=player.hand.filter(c=>c.cost<=player.qi&&c.type==='chain');
+  if(candidates.length===0)return playBestDamageCard(player,target);
+  return aiPlayCard(player,target,candidates[0]);
+}
+
+function playCardById(player,target,id){
+  let idx=player.hand.findIndex(c=>c.id===id&&c.cost<=player.qi);
+  if(idx<0)return false;
+  return aiPlayCard(player,target,player.hand[idx],idx);
+}
+
+// ============================================================
+//  渲染
+// ============================================================
+
+function showSelect(){
+  document.getElementById('selectScreen').style.display='flex';
+  document.getElementById('gameScreen').style.display='none';
+  document.getElementById('lobbyScreen').style.display='none';
+  // TOURNAMENT: hide tournament screens
+  document.getElementById('tournamentLobby').style.display='none';
+  document.getElementById('tournamentResult').style.display='none';
+  tournament = null;
+  tournamentMatchRef = null;
+  playMode = 'local';
+  // 重置模式选择
+  document.querySelectorAll('.modeBtn').forEach((el,i) => {
+    el.classList.toggle('active', i===0);
+  });
+  document.getElementById('joinArea').style.display = 'none';
+  buildCharGrid();
+}
+
+function buildCharGrid(){
+  const grid=document.getElementById('charGrid');
+  grid.innerHTML='';
+  Object.entries(SCHOOLS).forEach(([key,sc])=>{
+    const card=document.createElement('div');
+    card.className='charCard';
+    card.innerHTML=`
+      <div class="icon">${sc.icon}</div>
+      <div class="name">${sc.name}</div>
+      <div class="title">${sc.title}</div>
+      <div class="school">${sc.tag||''}</div>
+      <div class="desc">${sc.desc}</div>
+      <div class="diff">${sc.diffStars} ${sc.diff}</div>
+    `;
+    card.onclick=()=>{
+      document.getElementById('selectScreen').style.display='none';
+      document.getElementById('gameScreen').style.display='flex';
+      newGame(key,1);
+    };
+    grid.appendChild(card);
+  });
+}
+
+// BIGHP: Render big HP bars for both players
+function renderBigHP() {
+  if(!game) return;
+  var p = game.p, e = game.e;
+  var pWrap = document.getElementById('playerBigHpWrap');
+  var pFill = document.getElementById('playerBigHpFill');
+  var pText = document.getElementById('playerBigHpText');
+  var oWrap = document.getElementById('oppBigHpWrap');
+  var oFill = document.getElementById('oppBigHpFill');
+  var oText = document.getElementById('oppBigHpText');
+  if(p && p.bigHP !== undefined && p.maxBigHP > 0) {
+    pWrap.style.display = 'flex';
+    pFill.style.width = Math.max(0, Math.min(100, (p.bigHP / p.maxBigHP) * 100)) + '%';
+    pText.textContent = p.bigHP + '/' + p.maxBigHP;
+  } else { pWrap.style.display = 'none'; }
+  if(e && e.bigHP !== undefined && e.maxBigHP > 0) {
+    oWrap.style.display = 'flex';
+    oFill.style.width = Math.max(0, Math.min(100, (e.bigHP / e.maxBigHP) * 100)) + '%';
+    oText.textContent = e.bigHP + '/' + e.maxBigHP;
+  } else { oWrap.style.display = 'none'; }
+}
+
+function renderAll(){
+  if(!game)return;
+  const p=game.p,e=game.e;
+
+  // Player
+  document.getElementById('playerAvatar').textContent=SCHOOLS[p.school]?.icon||'?';
+  document.getElementById('playerName').textContent='你';
+  document.getElementById('playerRealm').textContent=REALMS[p.realm]?.name||'练气期';
+  document.getElementById('playerHpText').textContent=`${p.hp}/${p.maxHp}`;
+  document.getElementById('playerHpBar').style.width=(p.hp/p.maxHp*100)+'%';
+  document.getElementById('qiVal').textContent=p.qi;
+  document.getElementById('qiMax').textContent=p.maxQi;
+  document.getElementById('deckCount').textContent=p.deck.length;
+  document.getElementById('discardCount').textContent=p.discard.length;
+
+  const pArmorBadge=document.getElementById('playerArmorBadge');
+  if(p.armor>0){pArmorBadge.style.display='inline';pArmorBadge.textContent='🛡️ '+p.armor;}
+  else pArmorBadge.style.display='none';
+
+  // Cultivation bar
+  const need=REALMS[p.realm]?.breakthroughNeed||3;
+  const pct=p.realm>=4 ? 100 : Math.min(100,(p.cultivation/need)*100);
+  document.getElementById('cultivationBarFill').style.width=pct+'%';
+  document.getElementById('cultProgress').textContent=p.realm>=4 ? '已至化神巅峰' : `${p.cultivation}/${need}`;
+
+  // Buttons
+  const btnCult=document.getElementById('btnCultivate');
+  const btnBt=document.getElementById('btnBreakthrough');
+  const btnEnd=document.getElementById('btnEndTurn');
+
+  if(game.gameOver||game.turn!=='player'||game.phase!=='action'){
+    btnCult.disabled=true;
+    btnBt.disabled=true;
+    btnEnd.disabled=true;
+  } else {
+    btnCult.disabled=false;
+    btnBt.disabled=p.cultivation<need;
+    btnEnd.disabled=false;
+  }
+
+  // Enemy
+  document.getElementById('oppAvatar').textContent=SCHOOLS[e.school]?.icon||'?';
+  document.getElementById('oppName').textContent=e.name||SCHOOLS[e.school]?.name||'对手';
+  document.getElementById('oppRealm').textContent=REALMS[e.realm]?.name||'练气期';
+  document.getElementById('oppHpText').textContent=`${e.hp}/${e.maxHp}`;
+  document.getElementById('oppHpBar').style.width=(e.hp/e.maxHp*100)+'%';
+  document.getElementById('oppHandCount').textContent='🃏×'+e.hand.length;
+
+  const eArmorBadge=document.getElementById('oppArmorBadge');
+  if(e.armor>0){eArmorBadge.style.display='inline';eArmorBadge.textContent='🛡️ '+e.armor;}
+  else eArmorBadge.style.display='none';
+
+  // Status zone
+  renderStatus();
+  renderChains();
+  // BIGHP: render big HP bars
+  renderBigHP();
+  renderHand();
+}
+
+function renderStatus(){
+  const zone=document.getElementById('statusZone');
+  zone.innerHTML='';
+  const p=game.p,e=game.e;
+  const add=(text,val,color)=>{
+    const b=document.createElement('div');
+    b.className='statusBadge';
+    b.innerHTML=text+' <span class="val" style="color:'+(color||'#f0d8a0')+'">'+(val||'')+'</span>';
+    zone.appendChild(b);
+  };
+
+  // 玩家被动效果（根据学校显示）
+  const school = p.school;
+  if(school==='tianjian')add('🗡️剑意',p.swordIntent||0+'/'+(p.maxSwordIntent||6),'#ff8080');
+  else if(school==='baicao'){
+    add('🌿药引',p.herb||0,'#80c080');
+    if(e.poison>0)add('☠️对手中毒',e.poison+'层','#80ff80');
+  }
+  else if(school==='xingxiu')add('🌀星轨',p.starTrack||0,'#80c0ff');
+  else if(school==='jingang')add('🔱金刚印',p.vajra||0,'#ffd080');
+  else if(school==='minghun'){
+    add('🪢魂链',(p.soulChains||0)+'/5','#c080ff');
+    if(p.soulChains>=1)add('⚡反射','50%','#c080ff');
+    if(p.soulChains>=2)add('💠吸灵','半额','#c080ff');
+    if(p.soulChains>=3)add('💚共疗','30%','#c080ff');
+  }
+
+  // 对手相关状态
+  if(e.armor>0)add('🛡️敌方护甲',e.armor,'#80a0ff');
+  if(e.soulChains>0)add('🪢敌方魂链',e.soulChains+'/5','#a060e0');
+  if(e.swordIntent>0)add('🗡️敌方剑意',e.swordIntent,'#ff6060');
+  if(e.poison>0)add('☠️中毒',e.poison+'层','#80ff80');
+  // 被动说明按钮
+  const helpBtn=document.createElement('div');
+  helpBtn.id='passiveHelpBtn';
+  helpBtn.style.cssText='cursor:pointer;font-size:0.65rem;color:#605070;background:rgba(30,20,40,0.8);border-radius:8px;padding:3px 8px;border:1px solid #2a2040';
+  helpBtn.textContent='❓被动';
+  helpBtn.onclick=showPassiveHelp;
+  zone.appendChild(helpBtn);
+}
+function showPassiveHelp(){
+  const school=game?.p?.school||'tianjian';
+  const helpTexts={
+    tianjian:'🗡️ 剑意：永久存在不消失\n被万剑诀/一剑破万法消耗\n叠层越高，爆发越强！\n最高'+(game?.p?.maxSwordIntent||6)+'层（剑心通明可提升）',
+    baicao:'🌿 药引：永久存在不消失\n被万毒噬心消耗来打伤害\n☠️ 中毒：每回合末造成层数伤害\n被毒爆术消耗来引爆\n💊 被动：治疗效果+20%',
+    xingxiu:'🌀 星轨：永久存在不消失\n被星陨/星辰灭世消耗\n斗转星移可部分消耗(2星轨)\n⭐ 被动：手牌上限+2（可持9张）',
+    jingang:'🔱 金刚印：永久存在(一般不消耗)\n被金刚破消耗来打爆发\n如来神掌按印数打伤(不消耗)\n🛡️ 被动：每回合开始+2护甲',
+    minghun:'🪢 魂链：永久存在\n万魂归宗后不可被移除\n被魂爆消耗(每次-4条)\n1条=反弹50%伤害\n2条=对手出牌你吸半费\n3条=对手回血你获30%\n4条=对手回合-2灵气\n5条=可灵魂剥离秒杀！',
+  };
+  const allText=helpTexts[school]||'被动效果永久存在，直到被对应技能消耗';
+  const overlay=document.createElement('div');
+  overlay.className='modalOverlay';
+  overlay.innerHTML='<div class="modalBox"><h2>📖 被动说明</h2><p style="white-space:pre-line;text-align:left;font-size:0.8rem;color:#c0b0a0">'+allText+'</p><button class="modalBtn secondary" onclick="this.closest(\'.modalOverlay\').remove()">知道了</button></div>';
+  document.body.appendChild(overlay);
+}
+
+function renderChains(){
+  const el=document.getElementById('soulChainDisplay');
+  el.innerHTML='';
+  const p=game.p;
+  if(p.soulChains>0){
+    el.innerHTML='<span style="font-size:0.7rem;color:#807060;margin-right:4px">🪢命魂链</span>';
+    for(let i=0;i<5;i++){
+      const d=document.createElement('div');
+      d.className='chainLink'+(i<p.soulChains?' active':'');
+      d.textContent=i<p.soulChains?'🔗':'';
+      el.appendChild(d);
+    }
+    // Show chain effects
+    const effects=[];
+    if(p.soulChains>=1)effects.push('反弹50%');
+    if(p.soulChains>=2)effects.push('吸灵');
+    if(p.soulChains>=3)effects.push('共疗');
+    if(p.soulChains>=4)effects.push('锁灵');
+    if(p.soulChains>=5)effects.push('同生共死');
+    const e=document.createElement('div');
+    e.style.cssText='font-size:0.5rem;color:#605070;margin-left:4px';
+    e.textContent=effects.join('·');
+    el.appendChild(e);
+  }
+}
+
+function renderHand(){
+  const el=document.getElementById('handArea');
+  el.innerHTML='';
+  if (!game) return;
+  const p=game.p;
+  const hand=p.hand;
+  const qi=p.qi;
+  const isMyTurn = game.turn === 'player' && game.phase === 'action';
+  hand.forEach((c,idx)=>{
+    const card=document.createElement('div');
+    // VFX: 境界品质边框
+    card.className='card realm-'+Math.min(c.realm||0,4);
+    if(c.cost>qi)card.classList.add('disabled');
+    if(selectedCard===c)card.classList.add('selected');
+
+    let typeLabel='';
+    const typeMap={'damage':'⚔️攻击','defense':'🛡️防御','heal':'💚回复','special':'✨特殊','chain':'🪢魂链'};
+    typeLabel=typeMap[c.type]||'';
+
+    card.innerHTML=`
+      <div class="cost">${c.cost}</div>
+      <div class="cName">${c.name}</div>
+      <div class="cDesc">${c.desc}</div>
+      <div class="cType type-${c.type}">${typeLabel}</div>
+    `;
+    if(c.cost<=qi&&!game.gameOver&&isMyTurn&&!game.cultivateMode){
+      card.onclick=()=>playCard(idx);
+      card.classList.add('playable');
+    }
+    if(game.cultivateMode&&!game.gameOver){
+      card.onclick=()=>{
+        var p=game.p;
+        var sc=p.hand.splice(idx,1)[0];
+        p.discard.push(sc);
+        var gain=Math.max(1,sc.cost*2);
+        p.cultivation=Math.min(p.cultivation+gain,REALMS[p.realm].breakthroughNeed);
+        addArmor(game,p,2);
+        game.cultivateMode=false;
+        var b=document.getElementById('btnCancelCultivate');
+        if(b)b.remove();
+        renderAll();
+      };
+      card.style.borderColor='#f0a040';
+      card.style.boxShadow='0 0 12px rgba(240,160,64,0.5)';
+    }
+    el.appendChild(card);
+  });
+}
+
+// ============================================================
+//  玩家操作
+// ============================================================
+
+let busyAnimating = false;
+
+function playCard(idx){
+  // 联机模式发送给服务器
+  if (playMode === 'online') {
+    if (game && game.phase === 'action') {
+      onlinePlayCard(idx);
+    }
+    return;
+  }
+  if(!game||game.gameOver||busyAnimating)return;
+  if(game.turn!=='player'||game.phase!=='action')return;
+  const p=game.p;
+  const card=p.hand[idx];
+  if(!card||p.qi<card.cost)return;
+
+  // 天罗地网限制出牌数量
+  if((p.maxPlayNext||0)>0&&p.playsThisTurn>=p.maxPlayNext){
+    log('⚠️ 本回合出牌已达上限');
+    return;
+  }
+  // 缚灵大阵：禁止使用伤害牌
+  if(p.noDamageNext>0&&card.type==='damage'){
+    log('⚠️ 本回合不能使用伤害牌');
+    return;
+  }
+
+  busyAnimating = true;
+  const cost=card.cost;
+  p.qi-=cost;
+
+  // 出牌动画
+  const handEl=document.getElementById('handArea');
+  const cardEls=handEl.querySelectorAll('.card');
+  if(cardEls[idx]) cardFlyOut(cardEls[idx]);
+  // VFX: 出牌粒子
+  if(typeof spawnParticles === 'function' && VFX_ENABLED){
+    const hr=handEl.getBoundingClientRect();
+    const cards=handEl.querySelectorAll('.card');
+    if(cards.length>0){const cr=cards[Math.min(idx,cards.length-1)].getBoundingClientRect();spawnParticles(cr.left+cr.width/2,cr.top+cr.height/2,12,'#f0d8a0',150);}
+    else spawnParticles(hr.left+hr.width/2,hr.top,12,'#f0d8a0',150);
+  }
+
+  // 立即执行卡牌效果
+  p.hand.splice(idx,1);
+  if(card.eff)card.eff(game,game.e,p);
+  p.discard.push(card);
+  p.playsThisTurn=(p.playsThisTurn||0)+1;
+
+  // 魂链被动2: 对手有魂链时，对手获得你一半灵气消耗
+  if(game.e.soulChains>=2){
+    let gain=Math.floor(cost/2);
+    if(gain>0){
+      game.e.qi=Math.min(game.e.maxQi,game.e.qi+gain);
+      log(`🪢 魂链吸灵：对手获得${gain}灵气`);
+    }
+  }
+
+  // 金丹 passive: 每第3张伤害牌额外2伤
+  if(p.realm>=2&&p.playsThisTurn%3===0&&card.type==='damage'){
+    dmg(game,game.e,2,p);
+    log('💥 金丹被动：额外2点伤害！');
+  }
+
+  // 等待动画完成再解锁
+  setTimeout(()=>{busyAnimating=false;},400);
+  renderAll();
+  if(game.gameOver)return;
+  if(game.e.hp<=0){game.winner=p;endGame(game);}
+}
+
+document.getElementById('btnCultivate').onclick=()=>{
+  if(playMode==='online'){onlineCultivate();return;}
+  if(!game||game.gameOver||game.turn!=='player'||game.phase!=='action')return;
+  const p=game.p;
+  if(p.realm>=4){
+    log('⚠️ 已至化神巅峰，无需再修炼！');
+    return;
+  }
+  if(p.cultivation>=REALMS[p.realm].breakthroughNeed){
+    log('⚠️ 修炼已满，请突破！');
+    return;
+  }
+  if(p.hand.length===0){
+    log('⚠️ 没有手牌可弃！');
+    return;
+  }
+  // 选牌弃置模式
+  game.cultivateMode = true;
+  var actionRow = document.getElementById('actionRow');
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'actionBtn';
+  cancelBtn.style.cssText = 'flex:0.5;background:linear-gradient(135deg,#502020,#803030);color:#fff;border:none;border-radius:8px;font-size:clamp(0.65rem,1.6vw,0.85rem);cursor:pointer;font-weight:700';
+  cancelBtn.textContent = '✕ 取消';
+  cancelBtn.id = 'btnCancelCultivate';
+  cancelBtn.onclick = function() {
+    game.cultivateMode = false;
+    var b = document.getElementById('btnCancelCultivate');
+    if(b) b.remove();
+    renderAll();
+  };
+  actionRow.appendChild(cancelBtn);
+  log('☝ 点击一张手牌来弃掉修炼');
+  renderAll();
+};
+
+document.getElementById('btnBreakthrough').onclick=()=>{
+  if(playMode==='online'){onlineBreakthrough();return;}
+  if(!game||game.gameOver||game.turn!=='player'||game.phase!=='action')return;
+  const p=game.p;
+  if(p.realm>=4)return;
+  if(p.cultivation<REALMS[p.realm].breakthroughNeed)return;
+
+  const newRealm=p.realm+1;
+  const dmg=tribulationDamage(newRealm-1);
+  p.hp-=dmg;
+  log(`🌩️ 天劫！受到${dmg}点真实伤害！`, 'breakthrough');
+  tribulationEffect();
+
+  if(p.hp<=0){
+    log('💀 你被天劫劈死了……', 'breakthrough');
+    game.winner=game.e;
+    endGame(game);
+    return;
+  }
+
+  p.realm=newRealm;
+  p.hp=REALMS[newRealm].maxHp;
+  p.maxHp=REALMS[newRealm].maxHp;
+  p.cultivation=0;
+  log(`🔥 突破成功！晋升${REALMS[newRealm].name}！`, 'breakthrough');
+  showCenterMsg(`🔥 突破！${REALMS[newRealm].name}`);
+  realmUpEffect();
+  renderAll();
+};
+
+document.getElementById('btnEndTurn').onclick=()=>{
+  if(playMode==='online'){onlineEndTurn();return;}
+  if(!game||game.gameOver||game.turn!=='player'||game.phase!=='action')return;
+  endPlayerTurn();
+};
+
+// TOURNAMENTFIX: Auto-play player's turn for AI vs AI matches
+function autoPlayPlayerAI() {
+  if(!game || game.gameOver) return;
+  if(game.turn !== 'player' || game.phase !== 'action') return;
+  // Swap player and enemy so existing AI functions treat game.e as AI and game.p as target
+  var origP = game.p, origE = game.e;
+  game._swapActive = true;
+  game.p = origE;
+  game.e = origP;
+  var lvl = game.aiLevel || 1;
+  if(lvl === 0) aiSimple(game);
+  else if(lvl === 1) aiNormal(game);
+  else aiHard(game);
+  // Swap back
+  game.p = origP;
+  game.e = origE;
+  game._swapActive = false;
+  // Clean up hand limit for player side
+  var maxHand = 7 + (game.p.school === 'xingxiu' ? 2 : 0);
+  while(game.p.hand.length > maxHand) game.p.discard.push(game.p.hand.pop());
+  game.p.playsThisTurn = 0;
+  renderAll();
+}
+
+function endPlayerTurn(){
+  const p=game.p,e=game.e;
+  if(game.gameOver)return;
+
+  // TOURNAMENTFIX: In AI vs AI matches, let player-side AI play cards first
+  if(game.mode === 'tournament' && tournament && tournament.currentMatchRef &&
+     !tournament.currentMatchRef.p1.human && !tournament.currentMatchRef.p2.human &&
+     game.turn === 'player' && game.phase === 'action') {
+    autoPlayPlayerAI();
+    if(game.gameOver) return;
+  }
+
+  // 玩家结束阶段
+  endPhase(p,e);
+
+  // AI 回合
+  game.turn='enemy';
+  game.phase='ai';
+  renderAll();
+
+  setTimeout(()=>{
+    if(!game||game.gameOver)return;
+    // AI 开始阶段
+    startPhase(e,p);
+    renderAll();
+
+    // AI 行动
+    aiTurn(game);
+
+    // AI 结束阶段
+    endPhase(e,p);
+
+    // 玩家开始阶段
+    game.turn='player';
+    game.turnCount++;
+    startPhase(p,e);
+    game.phase='action';
+    renderAll();
+    log(`--- 第 ${game.turnCount} 回合 ---`);
+    showTurnPopup(`🎴 第 ${game.turnCount} 回合`);
+    // TOURNAMENT: auto-play AI vs AI matches
+    if(game.mode === 'tournament' && tournament && tournament.currentMatchRef &&
+       !tournament.currentMatchRef.p1.human && !tournament.currentMatchRef.p2.human && !game.gameOver){
+      setTimeout(endPlayerTurn, 400);
+    }
+  },600);
+
+  renderAll();
+}
+
+function startPhase(who,opponent){
+  if(game.gameOver)return;
+  const realm=REALMS[who.realm];
+  let qiGain=realm.qiPerTurn-(who.qiPenalty||0);
+  if(qiGain<1)qiGain=1;
+  who.qi=Math.min(who.maxQi,who.qi+qiGain);
+  who.qiPenalty=0;
+
+  let drawCount=2+(who.realm>=4?1:0)-(who.drawPenalty||0);
+  if(drawCount<1)drawCount=1;
+  for(let i=0;i<drawCount;i++)drawCard(who);
+  who.drawPenalty=0;
+
+  if(who.realm>=1)heal(game,who,2);
+  if(who.school==='jingang')addArmor(game,who,2);
+
+  // 重置修炼标记
+  who.hasCultivated = 0;
+
+  // 魂链被动4: 对手灵气-2
+  if(opponent&&opponent.soulChains>=4){
+    opponent.qi=Math.max(0,opponent.qi-2);
+    log('🪢 魂链压制：对手失去2灵气');
+  }
+}
+
+function endPhase(who,opponent){
+  if(game.gameOver)return;
+  // 中毒伤害（对中毒者造成伤害）
+  if(who.poison>0&&!game.gameOver){
+    let extra=0;
+    if(opponent&&opponent.poisonMastery)extra=who.poison*opponent.poisonMastery;
+    dmg(game,who,who.poison+extra,opponent);
+  }
+  // 魂链持续伤害
+  if(opponent&&opponent.soulChains>0&&!game.gameOver)dmg(game,who,opponent.soulChains,opponent);
+
+  // 弃牌
+  const maxHand=7+(who.school==='xingxiu'?2:0);
+  while(who.hand.length>maxHand)who.discard.push(who.hand.pop());
+
+  // 护甲处理
+  if(who.realm>=3&&who.armor>0&&!who.armorPersist)who.armor=Math.min(who.armor,3);
+  else if(!who.armorPersist)who.armor=0;
+  who.armorPersist=0;
+  who.invincible=0;
+  who.redirect=0;
+  who.playsThisTurn=0;
+  who.maxPlayNext=0;
+  who.noDamageNext=0;
+  who.hasCultivated=0;
+  who.jianzhenBuff=0;
+  who.reflectArmor=0;
+
+  if(game.gameOver)return;
+  if(who.hp<=0){game.winner=opponent||game.p;endGame(game);}
+}
+
+// ============================================================
+//  联机模式
+// ============================================================
+
+let playMode = 'local'; // 'local' | 'online'
+let gameMode = 'local';  // 'local'|'pve_roguelike'|'pvp'|'tournament'
+let socket = null;
+let myRoomId = null;
+let myName = '修士';
+let roomPlayers = [];
+let isRoomHost = false;
+let isOnlineReady = false;
+let selectedOnlineSchool = null;
+
+function setMode(mode) {
+  playMode = mode;
+  if(mode==='online') gameMode='pvp'; else if(mode==='local') gameMode='local';
+  document.querySelectorAll('.modeBtn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.modeBtn').forEach(el => {
+    if (el.querySelector('.label')?.textContent.includes(mode === 'local' ? '本地' : '联机')) {
+      el.classList.add('active');
+    }
+  });
+  document.getElementById('joinArea').style.display = mode === 'online' ? 'flex' : 'none';
+  if (mode === 'online') connectSocket();
+}
+
+function connectSocket() {
+  if (socket && socket.connected) return;
+  // 检查 socket.io 是否加载
+  if (typeof io === 'undefined') {
+    const errEl = document.getElementById('joinError');
+    if (errEl) errEl.textContent = '⚠️ 无法连接服务器（Socket.io未加载）';
+    return;
+  }
+  // 自动检测服务器地址：本地文件打开时用 localhost:3000，部署后用同源
+  const isFile = window.location.protocol === 'file:';
+  const serverUrl = isFile ? 'http://localhost:3000' : window.location.origin;
+  try {
+    socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      timeout: 10000
+    });
+    socket.on('connect', () => console.log('🔌 已连接服务器'));
+    socket.on('disconnect', () => console.log('🔌 断开连接'));
+    socket.on('error', ({ message }) => {
+      const errEl = document.getElementById('joinError');
+      if (errEl) errEl.textContent = '⚠️ ' + message;
+      setTimeout(() => { if (errEl) errEl.textContent = ''; }, 3000);
+    });
+    socket.on('room_joined', ({ roomId, players, host }) => {
+      myRoomId = roomId;
+      isRoomHost = socket.id === host;
+      roomPlayers = players;
+      document.getElementById('selectScreen').style.display = 'none';
+      document.getElementById('lobbyScreen').style.display = 'flex';
+      updateLobby();
+    });
+    socket.on('room_updated', ({ players }) => {
+      roomPlayers = players;
+      updateLobby();
+    });
+    socket.on('game_started', ({ players, turnOrder, firstTurn }) => {
+      roomPlayers = players;
+      document.getElementById('lobbyScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'flex';
+      isOnlineReady = false;
+      log('⚔️ 游戏开始！等待服务器分配状态...', 'system');
+    });
+    socket.on('game_state', (state) => {
+      applyOnlineState(state);
+    });
+    socket.on('your_turn', () => {
+      if (!game) return;
+      game.turn = 'player';
+      game.phase = 'action';
+      showTurnPopup('🎴 你的回合');
+      renderAll();
+    });
+    socket.on('enemy_turn', () => {
+      if (!game) return;
+      game.turn = 'enemy';
+      game.phase = 'waiting';
+      renderAll();
+    });
+    socket.on('game_over', ({ winner, winnerName }) => {
+      if (!game) return;
+      game.gameOver = true;
+      game.winner = winner === socket.id ? game.p : game.e;
+      const win = winner === socket.id;
+      const overlay = document.createElement('div');
+      overlay.className = 'modalOverlay';
+      overlay.innerHTML = `<div class="modalBox"><h2>${win ? '🎉 飞升成功！' : '💀 身死道消'}</h2><p>${win ? '你战胜了对手，大道可期！' : (winnerName || '对手') + ' 击败了你……'}</p><button class="modalBtn" onclick="this.closest(\'.modalOverlay\').remove();leaveRoom()">返回大厅</button></div>`;
+      document.body.appendChild(overlay);
+    });
+    socket.on('game_interrupted', ({ message }) => {
+      if (game) { game.gameOver = true; }
+      const overlay = document.createElement('div');
+      overlay.className = 'modalOverlay';
+      overlay.innerHTML = `<div class="modalBox"><h2>⚠️ 游戏中断</h2><p>${message}</p><button class="modalBtn" onclick="this.closest(\'.modalOverlay\').remove();leaveRoom()">返回大厅</button></div>`;
+      document.body.appendChild(overlay);
+    });
+  } catch(e) {
+    document.getElementById('joinError').textContent = '⚠️ 无法连接服务器';
+  }
+}
+
+function createRoom() {
+  const name = prompt('输入你的道号：', myName) || myName;
+  myName = name;
+  if (!socket || !socket.connected) connectSocket();
+  if (socket && socket.connected) socket.emit('create_room', { name });
+}
+
+function joinRoom() {
+  const roomId = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+  if (roomId.length < 4) { document.getElementById('joinError').textContent = '⚠️ 请输入4位房间码'; return; }
+  const name = prompt('输入你的道号：', myName) || myName;
+  myName = name;
+  if (!socket || !socket.connected) connectSocket();
+  setTimeout(() => {
+    if (socket && socket.connected) socket.emit('join_room', { roomId, name });
+  }, 500);
+}
+
+function leaveRoom() {
+  if (socket) socket.emit('leave_room');
+  myRoomId = null;
+  roomPlayers = [];
+  isRoomHost = false;
+  isOnlineReady = false;
+  game = null;
+  document.getElementById('lobbyScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('selectScreen').style.display = 'flex';
+  showSelect();
+}
+
+function updateLobby() {
+  const el = document.getElementById('lobbyPlayers');
+  const codeEl = document.getElementById('roomCodeDisplay');
+  if (codeEl && myRoomId) codeEl.textContent = myRoomId;
+
+  el.innerHTML = '';
+  roomPlayers.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'lobbyPlayer';
+    const school = p.school || '未选';
+    const schoolIcon = SCHOOLS[p.school]?.icon || '❓';
+    div.innerHTML = `
+      <div class="icon">${p.ai ? '🤖' : schoolIcon}</div>
+      <div class="name">${p.name}</div>
+      ${p.ai ? `<div class="status ai">AI ${['简单','普通','困难'][p.aiLevel]||'普通'}</div>` :
+        `<div class="status ${p.ready ? 'ready' : 'waiting'}">${p.ready ? '✅ 已准备' : '⏳ 未准备'}</div>`}
+      ${!p.ai && isRoomHost ? `<button class="removeBtn" data-kick="${p.id}">✕</button>` : ''}
+      ${p.ai && isRoomHost ? `<button class="removeBtn" data-remove="${p.id}">✕</button>` : ''}
+    `;
+    el.appendChild(div);
+
+    // 绑定踢人/移除AI按钮
+    const kickBtn = div.querySelector('[data-kick]');
+    if (kickBtn) { const pid = kickBtn.dataset.kick; kickBtn.onclick = () => kickPlayer(pid); }
+    const removeBtn = div.querySelector('[data-remove]');
+    if (removeBtn) { const pid = removeBtn.dataset.remove; removeBtn.onclick = () => removeAI(pid); }
+
+    // 如果是当前玩家且不是AI，显示选角选项
+    if (p.id === socket?.id) {
+      const selDiv = document.createElement('div');
+      selDiv.className = 'schoolSelect';
+      Object.entries(SCHOOLS).forEach(([key, sc]) => {
+        const opt = document.createElement('button');
+        opt.className = 'schoolOption' + (selectedOnlineSchool === key ? ' chosen' : '');
+        opt.textContent = sc.icon + sc.name;
+        opt.onclick = () => { selectedOnlineSchool = key; socket.emit('set_school', { school: key }); updateLobby(); };
+        selDiv.appendChild(opt);
+      });
+      el.appendChild(selDiv);
+    }
+  });
+
+  // 按钮状态
+  const btnReady = document.getElementById('btnReadyToggle');
+  const btnStart = document.getElementById('btnStartGame');
+  if (btnReady) {
+    const isReady = roomPlayers.find(p => p.id === socket?.id)?.ready || false;
+    btnReady.textContent = isReady ? '⏸️ 取消准备' : '✅ 准备';
+    btnReady.style.background = isReady ? 'linear-gradient(135deg,#403030,#604040)' : 'linear-gradient(135deg,#304060,#4060a0)';
+  }
+  if (btnStart) {
+    btnStart.style.display = isRoomHost ? 'block' : 'none';
+  }
+}
+
+function toggleReady() {
+  if (!socket) return;
+  const p = roomPlayers.find(p => p.id === socket.id);
+  const newReady = !(p?.ready || false);
+  isOnlineReady = newReady;
+  socket.emit('set_ready', { ready: newReady });
+}
+
+function addAIPlayer() {
+  if (!socket || !isRoomHost) return;
+  const level = parseInt(prompt('AI难度 (0=简单, 1=普通, 2=困难)：', '1') || '1');
+  socket.emit('add_ai', { level: Math.min(2, Math.max(0, level)) });
+}
+
+function removeAI(playerId) {
+  if (!socket || !isRoomHost) return;
+  socket.emit('remove_ai', { playerId });
+}
+
+function kickPlayer(playerId) {
+  if (!socket || !isRoomHost) return;
+  // 简单实现：移除玩家（实际可以用专门的kick事件）
+}
+
+function startOnlineGame() {
+  if (!socket || !isRoomHost) return;
+  socket.emit('start_game');
+}
+
+function applyOnlineState(state) {
+  if (!state || !state.me) return;
+
+  if (!game) {
+    const opp = state.opponents && state.opponents[0] ? state.opponents[0] : null;
+    gameMode = 'pvp';
+    game = {
+      turn: 'waiting',
+      phase: 'waiting',
+      turnCount: 0,
+      gameOver: false,
+      winner: null,
+      p: createOnlinePlayer(state.me),
+      e: opp ? createOnlinePlayer(opp) : {
+        name: '对手', school: 'tianjian', hp: 30, maxHp: 30,
+        qi: 0, maxQi: 10, realm: 0, armor: 0, hand: { length: 0 },
+        deck: { length: 0 }, discard: { length: 0 },
+        cultivation: 0, swordIntent: 0, poison: 0, starTrack: 0,
+        vajra: 0, herb: 0, soulChains: 0, chainLocked: false,
+      },
+    };
+  }
+
+  // 更新玩家
+  const m = state.me;
+  const p = game.p;
+  p.hp = m.hp; p.maxHp = m.maxHp; p.armor = m.armor || 0;
+  p.realm = m.realm; p.qi = m.qi; p.maxQi = m.maxQi;
+  p.cultivation = m.cultivation; p.hand = m.hand || [];
+  p.deck = { length: m.deckCount || 0 };
+  p.discard = { length: m.discardCount || 0 };
+  p.soulChains = m.soulChains || 0;
+  p.swordIntent = m.swordIntent || 0;
+  p.poison = m.poison || 0;
+  p.starTrack = m.starTrack || 0;
+  p.vajra = m.vajra || 0;
+  p.herb = m.herb || 0;
+  p.chainLocked = m.chainLocked || false;
+
+  // 更新对手
+  if (state.opponents && state.opponents[0] && game.e) {
+    const o = state.opponents[0];
+    game.e.hp = o.hp; game.e.maxHp = o.maxHp; game.e.armor = o.armor || 0;
+    game.e.realm = o.realm; game.e.hand = { length: o.handCount || 0 };
+    game.e.soulChains = o.soulChains || 0; game.e.poison = o.poison || 0;
+    game.e.school = o.school || game.e.school;
+    game.e.name = o.name || game.e.name;
+  }
+
+  game.turnCount = state.turnCount || 0;
+  game.turn = state.turnOf === socket?.id ? 'player' : 'enemy';
+  game.phase = state.turnOf === socket?.id ? 'action' : 'waiting';
+  game.gameOver = state.gameOver || false;
+
+  renderAll();
+}
+
+function createOnlinePlayer(data) {
+  return {
+    name: data.name || '修士',
+    school: data.school || 'tianjian',
+    hp: data.hp || 30,
+    maxHp: data.maxHp || 30,
+    qi: data.qi || 0,
+    maxQi: 10,
+    realm: data.realm || 0,
+    cultivation: data.cultivation || 0,
+    armor: data.armor || 0,
+    hand: data.hand || [],
+    deck: { length: data.deckCount || 0 },
+    discard: { length: data.discardCount || 0 },
+    soulChains: data.soulChains || 0,
+    swordIntent: data.swordIntent || 0,
+    poison: data.poison || 0,
+    starTrack: data.starTrack || 0,
+    vajra: data.vajra || 0,
+    herb: data.herb || 0,
+    chainLocked: data.chainLocked || false,
+    // BIGHP: online mode big HP (cosmetic, not synced)
+    bigHP: REALMS[0].maxHp * 3,
+    maxBigHP: REALMS[0].maxHp * 3,
+  };
+}
+
+// 联机模式下拦截玩家操作
+function onlinePlayCard(idx) {
+  if (socket && socket.connected && playMode === 'online') {
+    socket.emit('player_action', { action: 'play_card', data: { idx } });
+  }
+}
+function onlineCultivate() {
+  if (socket && socket.connected && playMode === 'online') {
+    socket.emit('player_action', { action: 'cultivate' });
+  }
+}
+function onlineBreakthrough() {
+  if (socket && socket.connected && playMode === 'online') {
+    socket.emit('player_action', { action: 'breakthrough' });
+  }
+}
+function onlineEndTurn() {
+  if (socket && socket.connected && playMode === 'online') {
+    socket.emit('player_action', { action: 'end_turn' });
+  }
+}
+
+// ============================================================
+//  初始化
+// ============================================================
+
+// 绑定按钮事件（替代内联onclick，更可靠）
+function bindUI() {
+  // 模式选择
+  document.querySelectorAll('.modeBtn').forEach(el => {
+    el.addEventListener('click', () => {
+      const mode = el.dataset.mode;
+      if (mode === 'local' || mode === 'online') setMode(mode);
+      else if (mode === 'tournament') showTournamentLobby();
+      else if (mode === 'roguelike') startRoguelikeRun(); // TOURNAMENT
+    });
+  });
+  // 联机房间按钮
+  const joinBtn = document.getElementById('btnJoinRoom');
+  const createBtn = document.getElementById('btnCreateRoom');
+  const roomInput = document.getElementById('roomCodeInput');
+  if (joinBtn) joinBtn.addEventListener('click', joinRoom);
+  if (createBtn) createBtn.addEventListener('click', createRoom);
+  if (roomInput) roomInput.addEventListener('input', function(){ this.value = this.value.toUpperCase(); });
+  // 大厅按钮
+  const readyBtn = document.getElementById('btnReadyToggle');
+  const addAIBtn = document.getElementById('btnAddAI');
+  const startBtn = document.getElementById('btnStartGame');
+  const leaveBtn = document.getElementById('btnLeaveRoom');
+  if (readyBtn) readyBtn.addEventListener('click', toggleReady);
+  if (addAIBtn) addAIBtn.addEventListener('click', addAIPlayer);
+  if (startBtn) startBtn.addEventListener('click', startOnlineGame);
+  if (leaveBtn) leaveBtn.addEventListener('click', leaveRoom);
+  // TOURNAMENT: tournament button bindings
+  const tStartBtn = document.getElementById('btnTournamentStart');
+  const tBackBtn = document.getElementById('btnTournamentBack');
+  const tNextBtn = document.getElementById('btnTournamentNextRound');
+  const tFinishBtn = document.getElementById('btnTournamentFinish');
+  if (tStartBtn) tStartBtn.addEventListener('click', startTournament);
+  if (tBackBtn) tBackBtn.addEventListener('click', () => { tournament = null; tournamentMatchRef = null; showSelect(); });
+  if (tNextBtn) tNextBtn.onclick = tournamentNextRound;
+  if (tFinishBtn) tFinishBtn.addEventListener('click', finishTournament);
+}
+
+showSelect();
+bindUI();
+
+// 注册 PWA Service Worker
+if ('serviceWorker' in navigator) {
+  var s2=document.createElement("script");s2.src="/ai_personality.js";document.body.appendChild(s2);
+// API Key 持久化
+(function(){var k=localStorage.getItem("ds_apikey");if(k){DEEPSEEK_API_KEY=k;var inp=document.getElementById("aiApiKeyInput");if(inp)inp.value=k;}}());
+var _origBI3=bindUI;bindUI=function(){_origBI3();
+  var saveBtn=document.getElementById("btnSaveApiKey");
+  var inp=document.getElementById("aiApiKeyInput");
+  var st=document.getElementById("apiKeyStatus");
+  if(inp){var saved=localStorage.getItem("ds_apikey");if(saved){inp.value=saved;DEEPSEEK_API_KEY=saved;if(st)st.textContent="✓ 已加载"}}  if(saveBtn&&inp)saveBtn.onclick=function(){    var v=inp.value.trim();    if(v){localStorage.setItem("ds_apikey",v);DEEPSEEK_API_KEY=v;if(st)st.textContent="✓ 已保存";chatHistory=[];console.log("API Key saved")}    else{localStorage.removeItem("ds_apikey");DEEPSEEK_API_KEY="YOUR_API_KEY_HERE";if(st)st.textContent="✗ 已清除"}  }};
+};
+navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+
+// 加载爬塔模式
+  // 加载 Socket.io（延迟加载，不影响主游戏）
+setTimeout(function(){
+  var s = document.createElement('script');
+  s.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+  s.onerror = function(){ console.log('Socket.io加载失败，联机模式不可用'); };
+  document.body.appendChild(s);
+}, 1000);
+</script>
+<script>
+// ============================================================
+//  TOURNAMENT: 群仙乱斗 — 6人淘汰赛
+// ============================================================
+
+let tournament = null;
+let tournamentMatchRef = null;
+let tournamentAIDifficulty = 1;
+
+const TOURNAMENT_AI_NAMES = [
+  '散修张三','散修李四','散修王五','散修赵六','散修陈七'
+];
+
+// TOURNAMENT: Initialize tournament with human's school choice
+function initTournament(humanSchool) {
+  const allSchools = Object.keys(SCHOOLS);
+  const usedSchools = [humanSchool];
+  tournament = {
+    players: [],
+    round: 0,
+    matches: [],
+    currentMatch: null,
+    currentMatchRef: null,
+    currentRoundPairs: [],
+    currentPairIndex: 0,
+    byePlayer: null,
+    phase: 'lobby'
+  };
+  // Human player
+  tournament.players.push({
+    name: '你',
+    school: humanSchool,
+    bigHP: 100, maxBigHP: 100, alive: true,
+    human: true, ai: false, aiLevel: 0
+  });
+  // AI players (5 more)
+  const aiNames = [...TOURNAMENT_AI_NAMES];
+  shuffle(aiNames);
+  for(let i = 0; i < 5; i++){
+    const remaining = allSchools.filter(s => !usedSchools.includes(s));
+    let aiSchool;
+    if(remaining.length > 0){
+      aiSchool = remaining[Math.floor(Math.random() * remaining.length)];
+    } else {
+      aiSchool = allSchools[Math.floor(Math.random() * allSchools.length)];
+    }
+    usedSchools.push(aiSchool);
+    tournament.players.push({
+      name: aiNames[i],
+      school: aiSchool,
+      bigHP: 100, maxBigHP: 100, alive: true,
+      human: false, ai: true,
+      aiLevel: tournamentAIDifficulty
+    });
+  }
+}
+
+// TOURNAMENT: Show tournament lobby
+function showTournamentLobby() {
+  document.getElementById('selectScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('lobbyScreen').style.display = 'none';
+  document.getElementById('tournamentLobby').style.display = 'flex';
+  document.getElementById('tournamentResult').style.display = 'none';
+  tournament = null;
+  tournamentMatchRef = null;
+  renderTournamentLobby();
+}
+
+// TOURNAMENT: Render lobby content
+function renderTournamentLobby() {
+  const container = document.getElementById('tournamentPlayerSlots');
+  const startBtn = document.getElementById('btnTournamentStart');
+  if(!tournament){
+    // Show school picker
+    container.innerHTML = '<div style="color:#a09080;font-size:0.85rem;margin-bottom:8px">🏯 选择你的宗门（其他选手自动填充）：</div><div class="schoolSelect" id="tournamentSchoolSelect"></div>';
+    const selDiv = document.getElementById('tournamentSchoolSelect');
+    Object.entries(SCHOOLS).forEach(([key, sc]) => {
+      const opt = document.createElement('button');
+      opt.className = 'schoolOption';
+      opt.textContent = sc.icon + ' ' + sc.name;
+      opt.onclick = () => {
+        document.querySelectorAll('#tournamentSchoolSelect .schoolOption').forEach(el => el.classList.remove('chosen'));
+        opt.classList.add('chosen');
+        initTournament(key);
+        renderTournamentLobby();
+      };
+      selDiv.appendChild(opt);
+    });
+    startBtn.style.display = 'none';
+  } else {
+    // Show 6 player slots
+    let html = '<div class="tournamentGrid">';
+    tournament.players.forEach(p => {
+      const sc = SCHOOLS[p.school];
+      const hpPct = (p.bigHP / p.maxBigHP) * 100;
+      html += '<div class="tournamentSlot ' + (p.alive?'':'dead') + ' ' + (p.human?'human':'') + '">' +
+        '<div class="tSlotIcon">' + (p.human?'🧑':'🤖') + ' ' + (sc?sc.icon:'❓') + '</div>' +
+        '<div class="tSlotName">' + p.name + '</div>' +
+        '<div class="tSlotSchool">' + (sc?sc.name:'未知') + '</div>' +
+        '<div class="tSlotHpBarWrap"><div class="tSlotHpFill" style="width:' + hpPct + '%"></div></div>' +
+        '<div class="tSlotHpText">' + p.bigHP + '/' + p.maxBigHP + '</div>' +
+        (!p.alive?'<div class="tSlotDead">💀 已淘汰</div>':'') +
+        '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    startBtn.style.display = 'block';
+  }
+}
+
+// TOURNAMENT: Start the tournament
+function startTournament() {
+  if(!tournament) return;
+  tournament.round = 0;
+  tournament.matches = [];
+  tournament.phase = 'match';
+  tournament.players.forEach(p => { p.bigHP = p.maxBigHP; p.alive = true; });
+  tournamentNextRound();
+}
+
+// TOURNAMENT: Proceed to next round
+function tournamentNextRound() {
+  if(!tournament) return;
+  const alive = tournament.players.filter(p => p.alive);
+  if(alive.length <= 1){
+    showTournamentChampion();
+    return;
+  }
+  tournament.round++;
+  tournament.phase = 'match';
+  shuffle(alive);
+  tournament.currentRoundPairs = [];
+  for(let i = 0; i < alive.length - 1; i += 2){
+    tournament.currentRoundPairs.push({ p1: alive[i], p2: alive[i+1] });
+  }
+  tournament.currentPairIndex = 0;
+  tournament.byePlayer = null;
+  if(alive.length % 2 !== 0){
+    tournament.byePlayer = alive[alive.length - 1];
+  }
+  showTournamentPairing();
+}
+
+// TOURNAMENT: Show round pairing screen
+function showTournamentPairing() {
+  document.getElementById('tournamentLobby').style.display = 'none';
+  document.getElementById('tournamentResult').style.display = 'flex';
+
+  document.getElementById('tournamentResultTitle').textContent = '⚔️ 群仙乱斗 — 第' + tournament.round + '轮';
+
+  let html = '<div class="tPairing">';
+  tournament.currentRoundPairs.forEach((pair, idx) => {
+    const s1 = SCHOOLS[pair.p1.school];
+    const s2 = SCHOOLS[pair.p2.school];
+    const active = (idx === tournament.currentPairIndex);
+    html += '<div class="tPairRow' + (active?' active':'') + '">' +
+      '<span class="tPairIcon">' + (s1?s1.icon:'❓') + '</span>' +
+      '<span class="tPairName">' + pair.p1.name + '</span>' +
+      '<span class="tPairVS">🗡️ VS 🗡️</span>' +
+      '<span class="tPairName">' + pair.p2.name + '</span>' +
+      '<span class="tPairIcon">' + (s2?s2.icon:'❓') + '</span>' +
+      (active?'<span class="tPairStatus">⚔️ 对战中...</span>':'') +
+      '</div>';
+  });
+  if(tournament.byePlayer){
+    html += '<div class="tPairRow bye"><span>' + (SCHOOLS[tournament.byePlayer.school]?.icon||'❓') + '</span><span>' + tournament.byePlayer.name + '</span><span style="color:#60c060">🔄 轮空自动晋级</span></div>';
+  }
+  html += '</div>';
+  document.getElementById('tournamentMatchResult').innerHTML = html;
+  document.getElementById('tournamentStandings').innerHTML = '';
+  document.getElementById('btnTournamentNextRound').style.display = 'none';
+  document.getElementById('btnTournamentFinish').style.display = 'none';
+
+  // Start first match after delay
+  if(tournament.currentRoundPairs.length > 0){
+    setTimeout(function(){ tournamentStartMatch(tournament.currentRoundPairs[0]); }, 1000);
+  }
+}
+
+// TOURNAMENT: Start a 1v1 match
+function tournamentStartMatch(pair) {
+  if(!pair || !pair.p1 || !pair.p2) return;
+  tournament.currentMatch = pair;
+  tournament.currentMatchRef = { p1: pair.p1, p2: pair.p2 };
+  game = null; // 清除上一场游戏状态
+
+  var p1 = pair.p1, p2 = pair.p2;
+  
+  // AI vs AI: 后台模拟，不显示战斗画面
+  if(!p1.human && !p2.human) {
+    document.getElementById('tournamentResult').style.display = 'flex';
+    document.getElementById('tournamentMatchResult').innerHTML = '<div style="text-align:center;color:#a09080;padding:20px">⚔️ ' + p1.name + ' VS ' + p2.name + ' 对战中...</div>';
+    simulateAIMatch(pair);
+    return;
+  }
+
+  document.getElementById('tournamentResult').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'flex';
+  var humanSchool, aiSchool, aiLevel;
+  var isHumanP1 = false;
+
+  if(p1.human){ humanSchool = p1.school; aiSchool = p2.school; aiLevel = p2.aiLevel||1; isHumanP1 = true; }
+  else if(p2.human){ humanSchool = p2.school; aiSchool = p1.school; aiLevel = p1.aiLevel||1; isHumanP1 = false; }
+  else { humanSchool = p1.school; aiSchool = p2.school; aiLevel = p2.aiLevel||1; isHumanP1 = true; }
+
+  tournament.currentMatchRef.isHumanP1 = isHumanP1;
+
+  // Create the game
+  newGame(humanSchool, aiLevel, aiSchool, 'tournament');
+  // Set names for display
+  game.p.name = isHumanP1 ? p1.name : p2.name;
+  game.e.name = isHumanP1 ? p2.name : p1.name;
+
+  // BIGHP: sync bigHP from tournament data
+  game.p.bigHP = (isHumanP1 ? p1 : p2).bigHP;
+  game.p.maxBigHP = (isHumanP1 ? p1 : p2).maxBigHP;
+  game.e.bigHP = (isHumanP1 ? p2 : p1).bigHP;
+  game.e.maxBigHP = (isHumanP1 ? p2 : p1).maxBigHP;
+
+  // AI vs AI: auto-play after creating game
+  if(!p1.human && !p2.human){
+    setTimeout(function(){ endPlayerTurn(); }, 600);
+  }
+}
+
+// 后台模拟AI对战（跳过战斗画面，快速结算）
+function simulateAIMatch(pair) {
+  var p1 = pair.p1, p2 = pair.p2;
+  var humanSchool = p1.school;
+  var aiSchool = p2.school;
+  var aiLevel = p2.aiLevel || 1;
+  
+  // 快速模拟：直接计算胜负
+  // 基于大血条(BigHP)和宗门相性决定胜负概率
+  var p1Power = (p1.bigHP || 100) + (p1.aiLevel || 0) * 10;
+  var p2Power = (p2.bigHP || 100) + (p2.aiLevel || 0) * 10;
+  p1Power += (3 - p1Power % 3) * Math.floor(Math.random() * 5);
+  p2Power += (3 - p2Power % 3) * Math.floor(Math.random() * 5);
+  
+  // 基于战斗回合模拟
+  var rounds = 5 + Math.floor(Math.random() * 10);
+  var hpDiff = Math.abs(Math.floor((p1Power - p2Power) * 0.3));
+  hpDiff = Math.max(0, Math.min(20, hpDiff));
+  
+  // 随机胜负（强方胜率高）
+  var p1WinChance = p1Power / (p1Power + p2Power) * 0.7 + 0.15;
+  var p1Won = Math.random() < p1WinChance;
+  
+  // 构造简易game对象
+  var winner, loser;
+  if(p1Won) { winner = p1; loser = p2; }
+  else { winner = p2; loser = p1; }
+  
+  // 大血条伤害
+  var damage = 10 + (rounds * 2) + Math.max(0, 12 - hpDiff);
+  var finalDamage = Math.max(12, Math.min(40, Math.floor(damage)));
+  loser.bigHP = Math.max(0, loser.bigHP - finalDamage);
+  
+  // 记录比赛
+  tournament.matches.push({
+    round: tournament.round,
+    p1Name: p1.name, p2Name: p2.name,
+    winnerName: winner.name, loserName: loser.name,
+    winnerSchool: winner.school, loserSchool: loser.school,
+    rounds: rounds, hpDiff: hpDiff,
+    bigHPDamage: finalDamage, eliminated: loser.bigHP <= 0
+  });
+  
+  if(loser.bigHP <= 0) { loser.alive = false; }
+  
+  tournament.phase = 'result';
+  
+  // 1.5秒后显示结果
+  setTimeout(function() {
+    showTournamentMatchResult();
+  }, 800);
+}
+
+// TOURNAMENT: Handle match end (called from endGame)
+function tournamentEndMatch(g) {
+  if(!tournament || !tournament.currentMatchRef) return;
+  var ref = tournament.currentMatchRef;
+  var p1 = ref.p1, p2 = ref.p2;
+  var isHumanP1 = ref.isHumanP1;
+
+  // Determine winner/loser
+  // TOURNAMENTFIX: account for autoPlayPlayerAI swap
+  var humanWon = (g.winner === (g._swapActive ? g.e : g.p));
+  var winner, loser;
+  if(isHumanP1){ winner = humanWon ? p1 : p2; loser = humanWon ? p2 : p1; }
+  else { winner = humanWon ? p2 : p1; loser = humanWon ? p1 : p2; }
+
+  // Calculate big HP damage
+  var rounds = g.turnCount || 1;
+  var hpDiff = Math.abs(g.p.hp - g.e.hp);
+  var damage = 10 + (rounds * 2) + Math.max(0, 12 - hpDiff);
+  var finalDamage = Math.max(12, Math.min(40, damage));
+
+  // Apply damage to loser's big HP
+  loser.bigHP = Math.max(0, loser.bigHP - finalDamage);
+  var eliminated = false;
+  if(loser.bigHP <= 0){ loser.alive = false; eliminated = true; }
+
+  // Record match
+  tournament.matches.push({
+    round: tournament.round,
+    p1Name: p1.name, p2Name: p2.name,
+    winnerName: winner.name, loserName: loser.name,
+    winnerSchool: winner.school, loserSchool: loser.school,
+    rounds: rounds, hpDiff: hpDiff,
+    bigHPDamage: finalDamage, eliminated: eliminated
+  });
+
+  tournament.phase = 'result';
+  showTournamentMatchResult();
+}
+
+// TOURNAMENT: Show match result
+function showTournamentMatchResult() {
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('tournamentResult').style.display = 'flex';
+
+  var lastMatch = tournament.matches[tournament.matches.length - 1];
+  document.getElementById('tournamentResultTitle').textContent = '⚔️ 群仙乱斗 — 第' + tournament.round + '轮';
+
+  var wSc = SCHOOLS[lastMatch.winnerSchool];
+  var lSc = SCHOOLS[lastMatch.loserSchool];
+
+  document.getElementById('tournamentMatchResult').innerHTML =
+    '<div class="tResultCard">' +
+    '<div class="tResultPair">' +
+    '<span class="tRIcon">' + (wSc?wSc.icon:'❓') + '</span>' +
+    '<span class="tRName winner">' + lastMatch.winnerName + '</span>' +
+    '<span class="tRVS">🏆 战胜 🗡️</span>' +
+    '<span class="tRName loser">' + lastMatch.loserName + '</span>' +
+    '<span class="tRIcon">' + (lSc?lSc.icon:'❓') + '</span>' +
+    '</div>' +
+    '<div class="tResultDetail">' +
+    '<div>⚔️ 经过 ' + lastMatch.rounds + ' 回合的激战</div>' +
+    '<div>💔 ' + lastMatch.loserName + ' 大血条 -' + lastMatch.bigHPDamage + '</div>' +
+    (lastMatch.eliminated ? '<div class="tEliminated">💀 ' + lastMatch.loserName + ' 被淘汰！</div>' : '') +
+    '</div></div>';
+
+  renderTournamentStandings();
+
+  var alive = tournament.players.filter(function(p){ return p.alive; });
+  // TOURNAMENTFIX: Handle next-match / next-round flow
+  var hasNextMatch = tournament.currentPairIndex < tournament.currentRoundPairs.length - 1;
+  var nextBtn = document.getElementById('btnTournamentNextRound');
+  var finishBtn = document.getElementById('btnTournamentFinish');
+
+  if(hasNextMatch) {
+    nextBtn.style.display = 'block';
+    nextBtn.textContent = '➡️ 下一场';
+    nextBtn.onclick = function() {
+      tournament.currentPairIndex++;
+      tournamentStartMatch(tournament.currentRoundPairs[tournament.currentPairIndex]);
+    };
+  } else {
+    nextBtn.style.display = (alive.length > 1) ? 'block' : 'none';
+    nextBtn.textContent = '➡️ 下一轮';
+    nextBtn.onclick = tournamentNextRound;
+  }
+  finishBtn.style.display = (alive.length <= 1) ? 'block' : 'none';
+
+  // 仅AI vs AI才自动推进，人类对战后需手动点击
+  var matchRef = tournament.currentMatchRef;
+  var isAIMatch = matchRef && !matchRef.p1.human && !matchRef.p2.human;
+  if(hasNextMatch && isAIMatch) {
+    setTimeout(function() {
+      tournament.currentPairIndex++;
+      tournamentStartMatch(tournament.currentRoundPairs[tournament.currentPairIndex]);
+    }, 1500);
+  } else if(isAIMatch && alive.length > 1) {
+    setTimeout(function() { tournamentNextRound(); }, 1200);
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// TOURNAMENT: Show champion
+function showTournamentChampion() {
+  document.getElementById('tournamentLobby').style.display = 'none';
+  document.getElementById('tournamentResult').style.display = 'flex';
+
+  var champion = tournament.players.find(function(p){ return p.alive; });
+  var chSc = champion ? SCHOOLS[champion.school] : null;
+
+  document.getElementById('tournamentResultTitle').textContent = '🏆 冠军诞生！';
+
+  document.getElementById('tournamentMatchResult').innerHTML =
+    '<div class="tChampionBanner">' +
+    '<div class="tChampCrown">👑</div>' +
+    '<div class="tChampIcon">' + (chSc?chSc.icon:'🏆') + '</div>' +
+    '<div class="tChampName">' + (champion?champion.name:'???') + '</div>' +
+    '<div class="tChampSchool">' + (chSc?chSc.name:'???') + '</div>' +
+    '<div class="tChampDesc">经过 ' + tournament.round + ' 轮激战，最终登顶！</div>' +
+    '<div class="tChampStats">' + (champion ? '剩余大血条：' + champion.bigHP + '/' + champion.maxBigHP : '') + '</div>' +
+    '</div>';
+
+  document.getElementById('tournamentStandings').innerHTML = '';
+  renderTournamentStandings();
+  document.getElementById('btnTournamentNextRound').style.display = 'none';
+  document.getElementById('btnTournamentFinish').style.display = 'block';
+}
+
+// TOURNAMENT: Clean up and return
+function finishTournament() {
+  tournament = null;
+  tournamentMatchRef = null;
+  game = null;
+  document.getElementById('tournamentResult').style.display = 'none';
+  document.getElementById('tournamentLobby').style.display = 'none';
+  showSelect();
+}
+
+// ============================================================
+//  TOURNAMENT: end
+// ============================================================
+//  TOURNAMENT: end
+// ============================================================
+</script>
+
+<!-- VFX: Canvas 粒子系统与特效函数 -->
+<script>
+// VFX: 全局开关 - 设为false可关闭所有特效
+var VFX_ENABLED = true;
+
+// VFX: Canvas粒子系统
+(function(){
+  var canvas = document.getElementById('particleCanvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var bgParticles = [];
+  var shockwaves = [];
+  var resizeTimer = null;
+
+  // 性能优化：移动端限制粒子数
+  var isMobile = window.innerWidth < 768;
+  var MAX_PARTICLES = isMobile ? 80 : 200;
+  var MAX_BG = isMobile ? 30 : 80;
+
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 200);
+  });
+  resize();
+
+  // 初始化背景星尘
+  function initBg(count){
+    bgParticles = [];
+    for(var i=0; i<count; i++){
+      bgParticles.push({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        size: Math.random()*2+0.5,
+        speedX: (Math.random()-0.5)*0.3,
+        speedY: (Math.random()-0.5)*0.3-0.1,
+        opacity: Math.random()*0.5+0.1,
+        phase: Math.random()*Math.PI*2
+      });
+    }
+  }
+
+  // VFX: 粒子爆发函数
+  window.spawnParticles = function(x, y, count, color, spread){
+    if(!VFX_ENABLED) return;
+    spread = spread || 120;
+    var n = Math.min(count||10, 30);
+    for(var i=0; i<n; i++){
+      var angle = Math.random()*Math.PI*2;
+      var speed = Math.random()*spread*0.03+1;
+      particles.push({
+        x:x, y:y,
+        vx:Math.cos(angle)*speed,
+        vy:Math.sin(angle)*speed,
+        life:1,
+        decay:Math.random()*0.025+0.01,
+        size:Math.random()*4+2,
+        color:color||'#ffffff',
+        gravity:0.02,
+        friction:0.97
+      });
+    }
+    // 粒子数限制
+    if(particles.length > MAX_PARTICLES) particles = particles.slice(-MAX_PARTICLES);
+  };
+
+  // VFX: 环形冲击波
+  window.spawnShockwave = function(x, y, color){
+    if(!VFX_ENABLED) return;
+    shockwaves.push({
+      x:x, y:y,
+      radius:5,
+      maxRadius:Math.min(canvas.width,canvas.height)*0.5,
+      life:1,
+      color:color||'#ffd700',
+      lineWidth:4
+    });
+  };
+
+  // VFX: 全屏闪白
+  window.flashScreen = function(duration){
+    if(!VFX_ENABLED) return;
+    duration = duration||300;
+    var el = document.createElement('div');
+    el.className = 'screen-flash';
+    el.style.animationDuration = (duration/1000)+'s';
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove();}, duration+100);
+  };
+
+  // VFX: 浮动光点 (DOM版)
+  window.spawnFloatingOrbs = function(parent, count, color){
+    if(!VFX_ENABLED||!parent) return;
+    count = Math.min(count||5, 8);
+    var origPos = parent.style.position;
+    if(origPos!=='absolute'&&origPos!=='fixed') parent.style.position = 'relative';
+    for(var i=0; i<count; i++){
+      (function(){
+        var size = Math.random()*8+4;
+        var orb = document.createElement('div');
+        orb.style.cssText = 'position:absolute;width:'+size+'px;height:'+size+'px;border-radius:50%;pointer-events:none;z-index:20;background:'+(color||'#60a0f0')+';box-shadow:0 0 6px '+(color||'#60a0f0')+';left:'+(Math.random()*100)+'%;top:'+(Math.random()*100)+'%;opacity:0.7';
+        parent.appendChild(orb);
+        var startY = parseFloat(orb.style.top);
+        var dur = Math.random()*800+800;
+        var startTime = null;
+        function anim(t){
+          if(!startTime) startTime = t;
+          var p = (t-startTime)/dur;
+          if(p>=1){orb.remove();return;}
+          orb.style.top = (startY - p*35)+'%';
+          orb.style.opacity = 0.7*(1-p);
+          orb.style.transform = 'translateX('+Math.sin(p*8)*8+'px)';
+          requestAnimationFrame(anim);
+        }
+        requestAnimationFrame(anim);
+      })();
+    }
+  };
+
+  // 根据境界更新背景星尘数量
+  window.updateBgParticles = function(realm){
+    var count = Math.min(MAX_BG, 15 + (realm||0)*15);
+    initBg(count);
+  };
+
+  // 护甲波动特效
+  window.triggerArmorWave = function(){
+    var badge = document.getElementById('playerArmorBadge');
+    if(badge && badge.style.display!=='none'){
+      badge.classList.remove('shield-wave');
+      void badge.offsetWidth;
+      badge.classList.add('shield-wave');
+    }
+  };
+
+  // 动画循环
+  var lastTime = 0;
+  function loop(time){
+    var dt = Math.min(time-lastTime, 50);
+    lastTime = time;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // 背景星尘
+    for(var i=bgParticles.length-1; i>=0; i--){
+      var bp = bgParticles[i];
+      bp.x += bp.speedX*(dt/16);
+      bp.y += bp.speedY*(dt/16);
+      bp.phase += 0.01;
+      if(bp.x<-10) bp.x = canvas.width+10;
+      if(bp.x>canvas.width+10) bp.x = -10;
+      if(bp.y<-10) bp.y = canvas.height+10;
+      if(bp.y>canvas.height+10) bp.y = -10;
+      ctx.beginPath();
+      ctx.arc(bp.x, bp.y, bp.size, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(200,200,255,'+(bp.opacity*(0.7+0.3*Math.sin(bp.phase)))+')';
+      ctx.fill();
+    }
+
+    // 活动粒子
+    for(var i=particles.length-1; i>=0; i--){
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.vx *= p.friction;
+      p.vy *= p.friction;
+      p.life -= p.decay;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha = p.life;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 冲击波
+    for(var i=shockwaves.length-1; i>=0; i--){
+      var sw = shockwaves[i];
+      sw.radius += 3;
+      sw.life -= 0.025;
+      if(sw.life<=0||sw.radius>sw.maxRadius){shockwaves.splice(i,1);continue;}
+      ctx.globalAlpha = sw.life;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI*2);
+      ctx.strokeStyle = sw.color;
+      ctx.lineWidth = sw.lineWidth*sw.life;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+
+  // 初始背景星尘
+  setTimeout(function(){window.updateBgParticles(0);}, 200);
+})();
+
+// VFX: 境界变化时更新背景星尘
+(function(){
+  var origRenderAll = window.renderAll;
+  if(origRenderAll){
+    var original = origRenderAll;
+    window.renderAll = function(){
+      original();
+      if(window.updateBgParticles && VFX_ENABLED && game){
+        updateBgParticles(game.p.realm);
+      }
+    };
+  }
+})();
+
+// VFX: 护甲变化检测
+(function(){
+  var origAddArmor = window.addArmor;
+  if(origAddArmor){
+    window.addArmor = function(g,target,n){
+      origAddArmor(g,target,n);
+      if(VFX_ENABLED && n>0 && target===g.p && typeof triggerArmorWave==='function'){
+        triggerArmorWave();
+      }
+    };
+  }
+})();
+</script>
+</body>
+</html>
